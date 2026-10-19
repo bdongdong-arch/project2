@@ -104,4 +104,88 @@ if st.session_state.discussion_active:
     st.subheader(f"💬 주제: {st.session_state.current_topic}")
     
     for idx, round_data in enumerate(st.session_state.rounds):
-        st.markdown(
+        st.markdown(f"#### 🔥 난상토론 [라운드 {idx + 1}]")
+        for speaker, text in round_data:
+            info = PHILOSOPHERS[speaker]
+            with st.chat_message("assistant", avatar=info["icon"]):
+                st.markdown(f"**{info['icon']} {speaker}**")
+                st.markdown(text)
+        st.markdown("")
+
+    # 👇 사용자가 원했던 위치: 채팅 목록이 끝나는 바로 아래에 '다음 반박 이어가기' 버튼 배치!
+    st.markdown("---")
+    if st.button("🗣️ 상대방 말에 발끈하며 반박/발언 이어가기"):
+        round_messages = []
+        history_context = []
+        for r in st.session_state.rounds:
+            for speaker, text in r:
+                history_context.append(f"{speaker}: {text}")
+
+        # 5명의 철학자가 순서대로 서로의 직전 발언을 물고 늘어지며 난상토론 진행
+        for name, info in PHILOSOPHERS.items():
+            prompt_content = (
+                f"{info['prompt']}\n\n"
+                f"[토론 주제] {st.session_state.current_topic}\n\n"
+                f"[아고라 광장 실시간 대화 흐름 (방금 오간 말들)]\n"
+            )
+            if history_context:
+                prompt_content += "\n".join(history_context)
+            else:
+                prompt_content += "토론이 막 시작되었습니다. 첫 주장을 빠르게 던지세요."
+                
+            prompt_content += (
+                f"\n\n지침: 위 대화에서 방금 나온 상대방의 주장을 눈여겨보고, "
+                f"{name}로서 차례를 기다리지 않고 곧바로 발끈하거나 반박하며 실시간으로 대화에 끼어들어라. "
+                f"가독성을 위해 줄바꿈을 적절히 써라."
+            )
+
+            messages_to_send = [
+                {"role": "system", "content": prompt_content},
+                {"role": "user", "content": f"{name}, 방금 저들의 말을 들었지? 당장 네 의견을 말해줘."}
+            ]
+
+            try:
+                response = client.chat.completions.create(
+                    model="gemini-3.5-flash-lite",
+                    messages=messages_to_send,
+                )
+                response_text = response.choices[0].message.content.strip()
+            except Exception:
+                response_text = "상대의 말에 기가 막힌지 잠시 말을 잇지 못합니다."
+
+            round_messages.append((name, response_text))
+            history_context.append(f"{name}: {response_text}")
+
+        # 새 라운드 추가 후 페이지 새로고침하여 바로 아래에 결과 렌더링
+        st.session_state.rounds.append(round_messages)
+        st.rerun()
+
+    # 만약 아직 라운드가 시작 안 된 상태라면 첫 라운드 자동 생성
+    if not st.session_state.rounds:
+        with st.spinner("철학자들이 아고라 광장에 모여 서로 눈치를 보며 난상토론을 준비 중입니다..."):
+            round_messages = []
+            history_context = []
+            for name, info in PHILOSOPHERS.items():
+                prompt_content = (
+                    f"{info['prompt']}\n\n"
+                    f"[토론 주제] {st.session_state.current_topic}\n\n"
+                    f"지침: 아고라 광장에 모여 첫 주장을 치열하게 펼쳐라."
+                )
+                messages_to_send = [
+                    {"role": "system", "content": prompt_content},
+                    {"role": "user", "content": f"{name}, 첫 포문을 열어줘."}
+                ]
+                try:
+                    response = client.chat.completions.create(
+                        model="gemini-3.5-flash-lite",
+                        messages=messages_to_send,
+                    )
+                    response_text = response.choices[0].message.content.strip()
+                except Exception:
+                    response_text = "침묵을 지키고 있습니다."
+                
+                round_messages.append((name, response_text))
+                history_context.append(f"{name}: {response_text}")
+            
+            st.session_state.rounds.append(round_messages)
+            st.rerun()
