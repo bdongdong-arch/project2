@@ -3,10 +3,10 @@ from openai import OpenAI
 import streamlit as st
 
 # 페이지 기본 설정
-st.set_page_config(page_title="🏛️ AI 철학자 아고라 다이내믹 토론장", page_icon="🏛️")
+st.set_page_config(page_title="🏛️ AI 철학자 아고라 자유 난상토론장", page_icon="🏛️")
 
-st.title("🏛️ 고대 아고라 철학자 다이내믹 난상토론장")
-st.write("주제에 대해 철학자들이 순서 없이, 가장 할 말 많은 자가 먼저 튀어나와 서로의 주장을 실시간으로 물고 늘어지는 토론장입니다.")
+st.title("🏛️ 고대 아고라 철학자 자유 난상토론장")
+st.write("순서 없이, 방금 나온 말에 가장 할 말 많은 철학자가 연속으로든 무작위로든 언제든 튀어나와 난타전을 벌이는 토론장입니다.")
 
 # 1. API 키 가져오기
 try:
@@ -103,7 +103,7 @@ if st.session_state.discussion_active:
     st.subheader(f"💬 주제: {st.session_state.current_topic}")
     
     for idx, round_data in enumerate(st.session_state.rounds):
-        st.markdown(f"#### 🔥 다이내믹 난상토론 [라운드 {idx + 1}]")
+        st.markdown(f"#### 🔥 자유 난상토론 [라운드 {idx + 1}]")
         for speaker, text in round_data:
             info = PHILOSOPHERS[speaker]
             with st.chat_message("assistant", avatar=info["icon"]):
@@ -113,7 +113,7 @@ if st.session_state.discussion_active:
 
     # 👇 채팅 목록 바로 아래에 배치된 '다음 반박 이어가기' 버튼
     st.markdown("---")
-    if st.button("🗣️ 가장 할 말 많은 철학자가 튀어나와 반박/발언 이어가기"):
+    if st.button("🗣️ 다음으로 가장 할 말 많은 철학자가 튀어나와 반박하기"):
         
         # 전체 대화 흐름 수집
         history_context = []
@@ -121,65 +121,87 @@ if st.session_state.discussion_active:
             for speaker, text in r:
                 history_context.append(f"{speaker}: {text}")
 
-        # [핵심 로직] 현재 상황에서 가장 관련성이 높고 먼저 말해야 할 철학자를 AI가 동적으로 선택
-        selector_prompt = (
-            f"현재 토론 주제: {st.session_state.current_topic}\n\n"
-            f"지금까지의 대화 흐름:\n" + ("\n".join(history_context) if history_context else "시작 직후") + "\n\n"
-            f"참여 중인 철학자 목록: {list(PHILOSOPHERS.keys())}\n"
-            f"지침: 위 대화 흐름을 볼 때, 방금 나온 주장에 가장 강하게 반박하거나 관련성이 높아 **지금 당장 가장 먼저 나서서 말해야 할 철학자 단 한 명의 이름**만 정확히 골라 적어라. (예: 니체, 소크라테스, 장자, 칸트, 홉스 중 택 1. 설명 없이 이름만 출력할 것)"
-        )
+        # [핵심 로직] 순서 제한 없이, 방금 말한 사람을 포함해 가장 먼저 나서야 할 철학자 3명을 연속으로 동적 지목
+        speakers_sequence = []
+        temp_history = list(history_context)
 
-        try:
-            selection_res = client.chat.completions.create(
-                model="gemini-3.5-flash-lite",
-                messages=[{"role": "system", "content": selector_prompt}],
+        for _ in range(3):  # 버튼을 누를 때마다 3명이 연속으로 치고 들어오며 난타전 벌임
+            selector_prompt = (
+                f"현재 토론 주제: {st.session_state.current_topic}\n\n"
+                f"지금까지의 대화 흐름:\n" + ("\n".join(temp_history) if temp_history else "시작 직후") + "\n\n"
+                f"참여 중인 철학자 목록: {list(PHILOSOPHERS.keys())}\n"
+                f"지침: 위 대화 흐름을 볼 때, **방금 나온 주장에 가장 강하게 반박하거나 이어서 말을 해야 할 철학자 단 한 명의 이름**만 정확히 골라 적어라. "
+                f"방금 말했던 사람이 연속으로 또 나서서 반박해도 상관없다. (예: 니체, 소크라테스, 장자, 칸트, 홉스 중 택 1. 설명 없이 이름만 출력할 것)"
             )
-            first_speaker = selection_res.choices[0].message.content.strip()
-            # 이름이 정확히 일치하지 않을 경우 기본값 설정
-            if first_speaker not in PHILOSOPHERS:
-                first_speaker = "니체"
-        except Exception:
-            first_speaker = "니체"
 
-        # 선택된 철학자를 맨 처음에 두고, 나머지 철학자들도 순서대로 반응하도록 구성
-        shuffled_speakers = [first_speaker] + [s for s in PHILOSOPHERS.keys() if s != first_speaker]
+            try:
+                selection_res = client.chat.completions.create(
+                    model="gemini-3.5-flash-lite",
+                    messages=[{"role": "system", "content": selector_prompt}],
+                )
+                next_speaker = selection_res.choices[0].message.content.strip()
+                if next_speaker not in PHILOSOPHERS:
+                    next_speaker = "니체"
+            except Exception:
+                next_speaker = "니체"
 
+            speakers_sequence.append(next_speaker)
+
+            # 해당 철학자의 임시 발언을 생성하여 다음 선택에 반영
+            info = PHILOSOPHERS[next_speaker]
+            prompt_content = (
+                f"{info['prompt']}\n\n"
+                f"[토론 주제] {st.session_state.current_topic}\n\n"
+                f"[아고라 광장 실시간 대화 흐름]\n" + ("\n".join(temp_history) if temp_history else "토론 시작") +
+                f"\n\n지침: 위 흐름에서 방금 나온 상대방의 주장에 즉각 반응하여, {name if 'name' in locals() else next_speaker}로서 참지 못하고 곧바로 끼어들어 반박해라. 가독성을 위해 줄바꿈을 적절히 써라."
+            )
+
+            try:
+                resp = client.chat.completions.create(
+                    model="gemini-3.5-flash-lite",
+                    messages=[
+                        {"role": "system", "content": prompt_content},
+                        {"role": "user", "content": f"{next_speaker}, 네 의견이나 반박을 말해줘."}
+                    ],
+                )
+                resp_text = resp.choices[0].message.content.strip()
+            except Exception:
+                resp_text = "상대의 말에 격하게 공감하거나 반박합니다."
+
+            temp_history.append(f"{next_speaker}: {resp_text}")
+
+        # 이번 라운드에 생성된 순서와 발언들을 저장
         round_messages = []
-        for name in shuffled_speakers:
+        for name in speakers_sequence:
             info = PHILOSOPHERS[name]
             prompt_content = (
                 f"{info['prompt']}\n\n"
                 f"[토론 주제] {st.session_state.current_topic}\n\n"
-                f"[아고라 광장 실시간 대화 흐름]\n" + ("\n".join(history_context) if history_context else "토론이 막 시작되었습니다.") +
-                f"\n\n지침: 위 흐름에서 방금 나온 상대방의 주장에 즉각 반응하여, {name}로서 가장 먼저 또는 자연스럽게 끼어들어 반박하거나 의견을 펼쳐라. 가독성을 위해 줄바꿈을 적절히 써라."
+                f"[아고라 광장 실시간 대화 흐름]\n" + ("\n".join(history_context)) +
+                f"\n\n지침: 위 흐름에서 방금 나온 상대방의 주장에 즉각 반응하여, {name}로서 곧바로 끼어들어 반박해라. 가독성을 위해 줄바꿈을 적절히 써라."
             )
-
-            messages_to_send = [
-                {"role": "system", "content": prompt_content},
-                {"role": "user", "content": f"{name}, 네 의견이나 반박을 말해줘."}
-            ]
-
             try:
                 response = client.chat.completions.create(
                     model="gemini-3.5-flash-lite",
-                    messages=messages_to_send,
+                    messages=[
+                        {"role": "system", "content": prompt_content},
+                        {"role": "user", "content": f"{name}, 네 의견이나 반박을 말해줘."}
+                    ],
                 )
                 response_text = response.choices[0].message.content.strip()
             except Exception:
-                response_text = "상대의 말에 침묵하며 생각에 잠깁니다."
+                response_text = "상대의 말에 반박합니다."
 
             round_messages.append((name, response_text))
             history_context.append(f"{name}: {response_text}")
 
-        # 새 라운드 추가 후 새로고침
         st.session_state.rounds.append(round_messages)
         st.rerun()
 
-    # 만약 아직 라운드가 시작 안 된 상태라면 첫 라운드 자동 생성 (주제와 가장 연관된 자가 첫 포문 열기)
+    # 만약 아직 라운드가 시작 안 된 상태라면 첫 라운드 자동 생성
     if not st.session_state.rounds:
         with st.spinner("철학자들이 주제를 듣고 가장 먼저 발언할 사람을 눈치 보는 중입니다..."):
             
-            # 첫 발언자 선정
             selector_prompt = (
                 f"토론 주제: {st.session_state.current_topic}\n"
                 f"참여 철학자: {list(PHILOSOPHERS.keys())}\n"
@@ -196,20 +218,43 @@ if st.session_state.discussion_active:
             except Exception:
                 first_speaker = "소크라테스"
 
-            shuffled_speakers = [first_speaker] + [s for s in PHILOSOPHERS.keys() if s != first_speaker]
+            # 첫 발언자 포함 총 3명이 연속으로 난상토론 포문 열기
+            opening_speakers = [first_speaker]
+            temp_history = []
             
+            for _ in range(2):
+                sel_prompt2 = (
+                    f"주제: {st.session_state.current_topic}\n"
+                    f"지금까지 발언 흐름: {opening_speakers}\n"
+                    f"참여 철학자: {list(PHILOSOPHERS.keys())}\n"
+                    f"지침: 다음으로 이어서 발언하거나 반박할 철학자 한 명의 이름만 적어라. (설명 없이 이름만)"
+                )
+                try:
+                    res2 = client.chat.completions.create(
+                        model="gemini-3.5-flash-lite",
+                        messages=[{"role": "system", "content": sel_prompt2}],
+                    )
+                    nxt = res2.choices[0].message.content.strip()
+                    if nxt in PHILOSOPHERS:
+                        opening_speakers.append(nxt)
+                    else:
+                        opening_speakers.append("니체")
+                except Exception:
+                    opening_speakers.append("니체")
+
             round_messages = []
             history_context = []
-            for name in shuffled_speakers:
+            for name in opening_speakers:
                 info = PHILOSOPHERS[name]
                 prompt_content = (
                     f"{info['prompt']}\n\n"
                     f"[토론 주제] {st.session_state.current_topic}\n\n"
-                    f"지침: 아고라 광장에서 이 주제에 대해 첫 주장을 치열하게 펼쳐라."
+                    f"[아고라 광장 흐름]\n" + ("\n".join(history_context) if history_context else "토론 시작") +
+                    f"\n\n지침: 아고라 광장에서 이 주제에 대해 치열하게 의견을 펼치거나 앞사람에게 반박해라."
                 )
                 messages_to_send = [
                     {"role": "system", "content": prompt_content},
-                    {"role": "user", "content": f"{name}, 첫 의견을 말해줘."}
+                    {"role": "user", "content": f"{name}, 의견을 말해줘."}
                 ]
                 try:
                     response = client.chat.completions.create(
