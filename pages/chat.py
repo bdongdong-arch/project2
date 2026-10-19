@@ -204,4 +204,5 @@ if st.session_state.discussion_active:
                 round_messages.append((name, response_text))
                 history_context.append(f"{name}: {response_text}")
             
-            st.session_state.rounds.
+            st.session_state.rounds.append(round_messages)
+            st.rerun()
