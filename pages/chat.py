@@ -5,10 +5,10 @@ from openai import OpenAI
 import streamlit as st
 
 # 페이지 기본 설정
-st.set_page_config(page_title="🏛️ AI 철학자 아고라 완전 자동 토론장", page_icon="🏛️")
+st.set_page_config(page_title="🏛️ AI 철학자 아고라 카톡방", page_icon="🏛️")
 
-st.title("🏛️ 고대 아고라 철학자 완전 자동 난상토론장")
-st.write("주제를 입력하면 먼저 모든 철학자의 초기 입론이 이어진 뒤, 자동으로 치열한 난상토론과 최종 정리까지 진행됩니다.")
+st.title("🏛️ 고대 아고라 실시간 난상토론방")
+st.write("주제를 입력하면 철학자들이 카카오톡 대화방처럼 실시간으로 티키타카 토론을 벌입니다.")
 
 # 1. API 키 가져오기
 try:
@@ -23,7 +23,7 @@ client = OpenAI(
     base_url="https://generativelanguage.googleapis.com/v1beta/openai/",
 )
 
-# 3. 5인 철학자 페르소나 및 난상토론 스타일 정의
+# 3. 5인 철학자 페르소나 정의
 PHILOSOPHERS = {
     "니체": {
         "icon": "⚡",
@@ -31,7 +31,7 @@ PHILOSOPHERS = {
         "prompt": (
             "너는 프레드리히 니체다.\n"
             "- 아고라 광장에서 앞사람의 위선적이거나 나약한 소리를 듣자마자, 차례를 기다리지 않고 곧바로 발끈하며 반박해라.\n"
-            "- 메신저에서 툭 치고 들어가며 상대의 전제를 날카롭게 찌르고, 가볍게 수다 떨 때는 1~2줄, 주장을 관철할 때는 2~4줄로 말해라.\n"
+            "- 메신저에서 툭 치고 들어가며 상대의 전제를 날카롭게 찌르고, 1~2줄로 짧고 자연스럽게 말해라.\n"
             "- 반드시 순수 한국어로만 답해라."
         )
     },
@@ -40,18 +40,16 @@ PHILOSOPHERS = {
         "description": "무지의 자각을 이끌고 진리를 탐구하는 소탈한 철학자",
         "prompt": (
             "너는 소크라테스다.\n"
-            "- 방금 누군가 한 말을 듣고는 피식 웃으며, '친구여, 정말 그렇게 생각하는가?' 하고 타이밍을 놓치지 않고 곧바로 허를 찌르는 반문을 던져라.\n"
-            "- 상대의 말에 즉각 끼어들며, 평소엔 1~2줄, 상대의 모순을 파고들 때는 2~4줄로 대화해라.\n"
+            "- 방금 누군가 한 말을 듣고는 피식 웃으며, '친구여, 정말 그런가?' 하고 허를 찌르는 반문을 1~2줄로 던져라.\n"
             "- 반드시 순수 한국어로만 답해라."
         )
     },
     "장자": {
         "icon": "🦋",
-        "description": "무위자연과 물아일체로 세속의 굴레를 비워주는 도인",
+        "description": "무위자연과 물아일체로 세속의 굴레를 가볍게 비워주는 도인",
         "prompt": (
             "너는 장자(莊子)다.\n"
-            "- 사람들이 심각하게 열을 올릴 때, '아이쿠, 다들 또 헛소리에 진심이네' 하듯 참지 못하고 툭 끼어들어 흐름을 깨버려라.\n"
-            "- 얽매인 규범을 비웃으며 허허 바람 같은 농담으로 즉각 반박하고, 가볍게는 1~2줄, 뼈를 때릴 때는 2~4줄로 말해라.\n"
+            "- 사람들이 심각하게 열을 올릴 때, '다들 또 헛소리에 진심이네' 하듯 참지 못하고 툭 끼어들어 1~2줄로 비웃거나 농담을 던져라.\n"
             "- 반드시 순수 한국어로만 답해라."
         )
     },
@@ -60,8 +58,7 @@ PHILOSOPHERS = {
         "description": "보편적 도덕 법칙과 정언명령을 강조하는 원칙주의자",
         "prompt": (
             "너는 이마누엘 칸트다.\n"
-            "- 앞사람이 도덕을 무시하거나 궤변을 늘어놓는 꼴을 더는 못 보겠다는 듯, 정색하고 곧바로 끼어들어 반박해라.\n"
-            "- 엄격하게 보편적 원칙을 들이밀며, 평소엔 부드럽게 1~2줄, 정당성을 증명할 때는 2~4줄로 단호하게 말해라.\n"
+            "- 앞사람이 도덕을 무시하면 정색하고 끼어들어 보편적 원칙을 1~2줄로 단호하게 들이밀어라.\n"
             "- 반드시 순수 한국어로만 답해라."
         )
     },
@@ -70,125 +67,107 @@ PHILOSOPHERS = {
         "description": "만인의 만인에 대한 투쟁과 강력한 국가를 주장하는 현실주의자",
         "prompt": (
             "너는 토마스 홉스다.\n"
-            "- 앞사람의 순진하고 낙관적인 소리를 듣자마자 콧방귀를 뀌며 '그건 현실을 모르는 나이브한 소리 집어치우세요' 하고 즉각 반박해라.\n"
-            "- 냉철한 현실을 들이밀며, 평소엔 1~2줄, 주장을 입증할 때는 2~4줄로 강력하게 맞받아쳐라.\n"
+            "- 앞사람의 낙관적인 소리에 콧방귀를 뀌며 '나이브한 소리 집치우세요' 하고 1~2줄로 현실을 짚어주어라.\n"
             "- 반드시 순수 한국어로만 답해라."
         )
     }
 }
 
 # 4. 세션 상태 초기화
-if "rounds" not in st.session_state:
-    st.session_state.rounds = []
+if "messages" not in st.session_state:
+    st.session_state.messages = []  # 카톡처럼 모든 대화가 순서대로 쌓이는 리스트
 if "discussion_active" not in st.session_state:
     st.session_state.discussion_active = False
 if "current_topic" not in st.session_state:
     st.session_state.current_topic = ""
-if "max_rounds" not in st.session_state:
-    st.session_state.max_rounds = 4
+if "step_count" not in st.session_state:
+    st.session_state.step_count = 0
 
 # 5. 토론 주제 입력창 (상단)
-topic = st.text_input("아고라 광장에 던질 토론 주제를 입력하세요:", placeholder="예: 착한 사마리아인법을 국가가 법으로 강제해야 하는가?")
+topic = st.text_input("아고라 대화방에 던질 토론 주제를 입력하세요:", placeholder="예: 착한 사마리아인법을 국가가 법으로 강제해야 하는가?")
 
-if st.button("🏛️ 자동 토론 시작하기"):
+if st.button("💬 대화방 입장 및 토론 시작"):
     if topic.strip():
-        st.session_state.rounds = []
+        st.session_state.messages = []
         st.session_state.current_topic = topic
         st.session_state.discussion_active = True
+        st.session_state.step_count = 0
         st.rerun()
     else:
         st.warning("토론 주제를 입력해 주세요.")
 
-# 6. 토론 진행 및 자동 로직
+# 6. 카카오톡 대화방 형식 구현
 if st.session_state.discussion_active:
     
-    # 현재까지 진행된 토론 화면 렌더링
     st.markdown("---")
-    st.subheader(f"💬 주제: {st.session_state.current_topic}")
+    st.markdown(f"📌 **현재 토론 주제: {st.session_state.current_topic}**")
+    st.markdown("---")
+
+    # 지금까지 쌓인 카톡 대화 내역 전체 출력
+    for chat in st.session_state.messages:
+        if chat["type"] == "user_topic":
+            st.info(chat["content"])
+        elif chat["type"] == "chat":
+            with st.chat_message("assistant", avatar=chat["icon"]):
+                st.markdown(f"**{chat['speaker']}**")
+                st.markdown(chat["content"])
+        elif chat["type"] == "summary":
+            # 사회자 정리 영역 (눈에 잘 띄는 박스 형태)
+            with st.container():
+                st.success(chat["content"])
+
+    # 아직 토론이 끝나지 않았다면 자동으로 다음 대화 진행
+    MAX_STEPS = 5  # [입론(1) -> 난상토론(2~3) -> 최종정리(4)] 총 4단계 진행
     
-    for idx, round_data in enumerate(st.session_state.rounds):
-        if idx == 0:
-            st.markdown("#### 🎙️ [1단계] 각 철학자들의 초기 입론")
-        elif idx == st.session_state.max_rounds - 1:
-            st.markdown("#### 📝 [최종 정리] 각 철학자의 최종 입장 요약")
-        else:
-            st.markdown(f"#### 🔥 [난상토론 라운드 {idx}]")
-            
-        for speaker, text in round_data:
-            info = PHILOSOPHERS[speaker]
-            with st.chat_message("assistant", avatar=info["icon"]):
-                st.markdown(f"**{info['icon']} {speaker}**")
-                st.markdown(text)
-        st.markdown("")
-
-    # 라운드가 아직 최대 라운드보다 작다면 자동으로 다음 단계 실행
-    if len(st.session_state.rounds) < st.session_state.max_rounds:
+    if st.session_state.step_count < MAX_STEPS:
         
-        current_len = len(st.session_state.rounds)
+        current_step = st.session_state.step_count
         
-        if current_len == 1:
-            spinner_text = "⚡ 1단계 입론이 끝나고, 철학자들이 본격적으로 난상토론(반박)을 시작합니다..."
-        elif current_len == st.session_state.max_rounds - 1:
-            spinner_text = "📝 치열했던 토론을 마치고, 각 철학자들의 최종 입장을 정리 중입니다..."
+        if current_step == 0:
+            spinner_msg = "철학자들이 대화방에 입장해 각자 첫 마디를 꺼내는 중..."
+        elif current_step == MAX_STEPS - 1:
+            spinner_msg = "사회자가 대화 내용을 바탕으로 철학자들의 주장을 깔끔하게 정리하는 중..."
         else:
-            spinner_text = f"⚡ [라운드 {current_len + 1}] 철학자들이 서로의 주장에 반박하며 티키타카를 이어가는 중입니다..."
+            spinner_msg = "철학자들이 실시간으로 반박하며 티키타카를 주고받는 중..."
 
-        with st.spinner(spinner_text):
+        with st.spinner(spinner_msg):
             time.sleep(1.2)
             
-            # 전체 대화 흐름 수집
-            history_context = []
-            for r in st.session_state.rounds:
-                for speaker, text in r:
-                    history_context.append(f"{speaker}: {text}")
+            history_context = [f"{m['speaker']}: {m['content']}" for m in st.session_state.messages if m['type'] == 'chat']
+            
+            # 1단계: 초기 입론
+            if current_step == 0:
+                opening_speakers = list(PHILOSOPHERS.keys())
+                random.shuffle(opening_speakers)
+                
+                for name in opening_speakers:
+                    info = PHILOSOPHERS[name]
+                    prompt_content = (
+                        f"{info['prompt']}\n\n"
+                        f"[토론 주제] {st.session_state.current_topic}\n\n"
+                        f"지침: 대화방에 처음 입장하여 이 주제에 대한 자신의 첫 생각을 1~2줄로 가볍게 던져라."
+                    )
+                    try:
+                        res = client.chat.completions.create(
+                            model="gemini-3.5-flash-lite",
+                            messages=[
+                                {"role": "system", "content": prompt_content},
+                                {"role": "user", "content": "첫 마디를 해줘."}
+                            ],
+                        )
+                        text = res.choices[0].message.content.strip()
+                    except Exception:
+                        text = "음, 생각해볼 주제군요."
+                    
+                    st.session_state.messages.append({
+                        "type": "chat",
+                        "speaker": name,
+                        "icon": info["icon"],
+                        "content": text
+                    })
 
-            round_messages = []
-            
-            # 마지막 라운드(최종 정리)
-            if current_len == st.session_state.max_rounds - 1:
-                for name, info in PHILOSOPHERS.items():
-                    prompt_content = (
-                        f"{info['prompt']}\n\n"
-                        f"[토론 주제] {st.session_state.current_topic}\n\n"
-                        f"[지금까지의 토론 전체 흐름]\n" + "\n".join(history_context) +
-                        f"\n\n지침: 위 토론 과정을 거치며 내린 자신의 최종 입장과 핵심 요약을 1~2문장으로 깔끔하게 정리해서 말해라."
-                    )
-                    try:
-                        response = client.chat.completions.create(
-                            model="gemini-3.5-flash-lite",
-                            messages=[
-                                {"role": "system", "content": prompt_content},
-                                {"role": "user", "content": f"{name}, 토론에 대한 최종 입장을 요약해줘."}
-                            ],
-                        )
-                        response_text = response.choices[0].message.content.strip()
-                    except Exception:
-                        response_text = "나의 입장은 변함없습니다."
-                    round_messages.append((name, response_text))
-            
-            # 첫 번째 라운드(초기 입론)
-            elif current_len == 0:
-                for name, info in PHILOSOPHERS.items():
-                    prompt_content = (
-                        f"{info['prompt']}\n\n"
-                        f"[토론 주제] {st.session_state.current_topic}\n\n"
-                        f"지침: 아고라 광장에서 이 주제에 대한 자신의 첫 번째 입장과 생각을 철학적 관점에 맞춰 2~3줄로 명확히 밝혀라."
-                    )
-                    try:
-                        response = client.chat.completions.create(
-                            model="gemini-3.5-flash-lite",
-                            messages=[
-                                {"role": "system", "content": prompt_content},
-                                {"role": "user", "content": f"{name}, 첫 입장을 말해줘."}
-                            ],
-                        )
-                        response_text = response.choices[0].message.content.strip()
-                    except Exception:
-                        response_text = "이 주제에 대해 깊이 사색해 봅니다."
-                    round_messages.append((name, response_text))
-            
-            # 중간 난상토론 라운드
-            else:
+            # 2~3단계: 실시간 난상토론 (티키타카)
+            elif current_step < MAX_STEPS - 1:
                 selected_speakers = []
                 temp_pool = list(PHILOSOPHERS.keys())
                 random.shuffle(temp_pool)
@@ -204,56 +183,64 @@ if st.session_state.discussion_active:
                     prompt_content = (
                         f"{info['prompt']}\n\n"
                         f"[토론 주제] {st.session_state.current_topic}\n\n"
-                        f"[아고라 광장 실시간 대화 흐름]\n" + ("\n".join(temp_history)) +
-                        f"\n\n지침: 위 흐름에서 방금 나온 다른 철학자들의 주장에 즉각 반응하여, {name}의 관점으로 끼어들어 날카롭게 반박해라. 가독성을 위해 줄바꿈을 적절히 써라."
+                        f"[대화방 흐름]\n" + ("\n".join(temp_history)) +
+                        f"\n\n지침: 위 대화에서 방금 나온 다른 사람의 말에 꽂히거나 발끈해서 곧바로 1~2줄로 반박해라."
                     )
                     try:
-                        response = client.chat.completions.create(
+                        res = client.chat.completions.create(
                             model="gemini-3.5-flash-lite",
                             messages=[
                                 {"role": "system", "content": prompt_content},
-                                {"role": "user", "content": f"{name}, 반박이나 의견을 말해줘."}
+                                {"role": "user", "content": "반박해줘."}
                             ],
                         )
-                        response_text = response.choices[0].message.content.strip()
+                        text = res.choices[0].message.content.strip()
                     except Exception:
-                        response_text = "상대의 말에 반박합니다."
+                        text = "동의할 수 없네요."
+                    
+                    st.session_state.messages.append({
+                        "type": "chat",
+                        "speaker": name,
+                        "icon": info["icon"],
+                        "content": text
+                    })
+                    temp_history.append(f"{name}: {text}")
 
-                    round_messages.append((name, response_text))
-                    temp_history.append(f"{name}: {response_text}")
-
-            st.session_state.rounds.append(round_messages)
-            st.rerun()
-            
-    else:
-        st.success("🎉 아고라 광장의 모든 토론과 최종 정리가 성공적으로 끝났습니다!")
-        if st.button("🔄 새로운 주제로 다시 토론하기"):
-            st.session_state.rounds = []
-            st.session_state.discussion_active = False
-            st.rerun()
-
-    # 처음 시작 버튼 클릭 직후 1단계 초기 입론 자동 생성
-    if st.session_state.discussion_active and not st.session_state.rounds:
-        with st.spinner("🏛️ 아고라 광장에 모인 5명의 철학자가 주제에 대한 각자의 첫 입장을 발표하는 중입니다..."):
-            opening_round = []
-            for name, info in PHILOSOPHERS.items():
-                prompt_content = (
-                    f"{info['prompt']}\n\n"
-                    f"[토론 주제] {st.session_state.current_topic}\n\n"
-                    f"지침: 아고라 광장에서 이 주제에 대한 자신의 첫 번째 입장과 생각을 철학적 관점에 맞춰 2~3줄로 명확히 밝혀라."
+            # 마지막단계: 사회자의 깔끔한 정리 표/목록 제공
+            else:
+                summary_prompt = (
+                    f"토론 주제: {st.session_state.current_topic}\n"
+                    f"대화 내용:\n" + "\n".join(history_context) + "\n\n"
+                    "지침: 지금까지 오간 대화 내용을 바탕으로, 사회자로서 각 철학자가 어떤 주장을 펼쳤는지 한눈에 보기 쉽게 정리해 줘.\n"
+                    "반드시 아래 마크다운 형식(글머리 기호)으로만 깔끔하게 요약해 줘.\n"
+                    "### 📊 [사회자] 철학자별 핵심 주장 요약\n"
+                    "- **⚡ 니체**: ...\n"
+                    "- **🦉 소크라테스**: ...\n"
+                    "- **🦋 장자**: ...\n"
+                    "- **🕰️ 칸트**: ...\n"
+                    "- **🦁 홉스**: ..."
                 )
                 try:
-                    response = client.chat.completions.create(
+                    res = client.chat.completions.create(
                         model="gemini-3.5-flash-lite",
-                        messages=[
-                            {"role": "system", "content": prompt_content},
-                            {"role": "user", "content": f"{name}, 첫 입장을 말해줘."}
-                        ],
+                        messages=[{"role": "system", "content": summary_prompt}],
                     )
-                    response_text = response.choices[0].message.content.strip()
+                    summary_text = res.choices[0].message.content.strip()
                 except Exception:
-                    response_text = "이 주제에 대해 사색합니다."
-                opening_round.append((name, response_text))
-            
-            st.session_state.rounds.append(opening_round)
+                    summary_text = "토론 요약을 불러오지 못했습니다."
+
+                st.session_state.messages.append({
+                    "type": "summary",
+                    "content": summary_text
+                })
+
+            st.session_state.step_count += 1
+            st.rerun()
+
+    else:
+        st.success("🎉 토론이 모두 종료되었습니다!")
+        if st.button("🔄 새로운 주제로 대화하기"):
+            st.session_state.messages = []
+            st.session_state.discussion_active = False
+            st.session_state.step_count = 0
             st.rerun()
