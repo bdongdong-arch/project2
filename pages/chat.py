@@ -8,7 +8,7 @@ import streamlit as st
 st.set_page_config(page_title="🏛️ AI 철학자 아고라 카톡방", page_icon="🏛️")
 
 st.title("🏛️ 고대 아고라 실시간 난상토론방")
-st.write("주제를 입력하면 철학자들이 카카오톡 대화방처럼 실시간으로 티키타카 토론을 벌입니다.")
+st.write("주제를 입력하면 철학자들이 카카오톡 대화방처럼 실시간으로 길고 치열한 티키타카 토론을 벌입니다.")
 
 # 1. API 키 가져오기
 try:
@@ -67,7 +67,7 @@ PHILOSOPHERS = {
         "description": "만인의 만인에 대한 투쟁과 강력한 국가를 주장하는 현실주의자",
         "prompt": (
             "너는 토마스 홉스다.\n"
-            "- 앞사람의 낙관적인 소리에 콧방귀를 뀌며 '나이브한 소리 집치우세요' 하고 1~2줄로 현실을 짚어주어라.\n"
+            "- 앞사람의 낙관적인 소리에 콧방귀를 뀌며 '나이브한 소리 집어치우세요' 하고 1~2줄로 현실을 짚어주어라.\n"
             "- 반드시 순수 한국어로만 답해라."
         )
     }
@@ -75,7 +75,7 @@ PHILOSOPHERS = {
 
 # 4. 세션 상태 초기화
 if "messages" not in st.session_state:
-    st.session_state.messages = []  # 카톡처럼 모든 대화가 순서대로 쌓이는 리스트
+    st.session_state.messages = []
 if "discussion_active" not in st.session_state:
     st.session_state.discussion_active = False
 if "current_topic" not in st.session_state:
@@ -103,7 +103,7 @@ if st.session_state.discussion_active:
     st.markdown(f"📌 **현재 토론 주제: {st.session_state.current_topic}**")
     st.markdown("---")
 
-    # 지금까지 쌓인 카톡 대화 내역 전체 출력
+    # 대화방 내역 출력
     for chat in st.session_state.messages:
         if chat["type"] == "user_topic":
             st.info(chat["content"])
@@ -112,52 +112,47 @@ if st.session_state.discussion_active:
                 st.markdown(f"**{chat['speaker']}**")
                 st.markdown(chat["content"])
         elif chat["type"] == "summary":
-            # 사회자 정리 영역 (눈에 잘 띄는 박스 형태)
             with st.container():
                 st.success(chat["content"])
 
-    # 아직 토론이 끝나지 않았다면 자동으로 다음 대화 진행
-    MAX_STEPS = 5  # [입론(1) -> 난상토론(2~3) -> 최종정리(4)] 총 4단계 진행
+    # 대화가 더 길게 이어지도록 MAX_STEPS를 8로 설정 (입론 1회 + 난상토론 6회 + 최종정리 1회)
+    MAX_STEPS = 8  
     
     if st.session_state.step_count < MAX_STEPS:
         
         current_step = st.session_state.step_count
         
         if current_step == 0:
-            spinner_msg = "철학자들이 대화방에 입장해 각자 첫 마디를 꺼내는 중..."
+            spinner_msg = "🏛️ 5명의 철학자가 대화방에 모두 입장해 각자의 생각을 꺼내는 중..."
         elif current_step == MAX_STEPS - 1:
-            spinner_msg = "사회자가 대화 내용을 바탕으로 철학자들의 주장을 깔끔하게 정리하는 중..."
+            spinner_msg = "📊 사회자가 대화 내용을 바탕으로 철학자별 주장을 정리하는 중..."
         else:
-            spinner_msg = "철학자들이 실시간으로 반박하며 티키타카를 주고받는 중..."
+            spinner_msg = f"🔥 철학자들이 치열하게 티키타카를 주고받는 중... ({current_step}/{MAX_STEPS-1})"
 
         with st.spinner(spinner_msg):
-            time.sleep(1.2)
+            time.sleep(1.0)
             
             history_context = [f"{m['speaker']}: {m['content']}" for m in st.session_state.messages if m['type'] == 'chat']
             
-            # 1단계: 초기 입론
+            # 1단계 (step 0): 5명 철학자 전부 순서대로 자신의 첫 생각 입론
             if current_step == 0:
-                opening_speakers = list(PHILOSOPHERS.keys())
-                random.shuffle(opening_speakers)
-                
-                for name in opening_speakers:
-                    info = PHILOSOPHERS[name]
+                for name, info in PHILOSOPHERS.items():
                     prompt_content = (
                         f"{info['prompt']}\n\n"
                         f"[토론 주제] {st.session_state.current_topic}\n\n"
-                        f"지침: 대화방에 처음 입장하여 이 주제에 대한 자신의 첫 생각을 1~2줄로 가볍게 던져라."
+                        f"지침: 대화방에 가장 먼저 입장하여, 이 주제에 대한 자신의 첫 번째 생각을 철학적 관점에서 1~2줄로 툭 던져라."
                     )
                     try:
                         res = client.chat.completions.create(
                             model="gemini-3.5-flash-lite",
                             messages=[
                                 {"role": "system", "content": prompt_content},
-                                {"role": "user", "content": "첫 마디를 해줘."}
+                                {"role": "user", "content": "첫 생각을 말해줘."}
                             ],
                         )
                         text = res.choices[0].message.content.strip()
                     except Exception:
-                        text = "음, 생각해볼 주제군요."
+                        text = "이 주제에 대해 사색해 봅니다."
                     
                     st.session_state.messages.append({
                         "type": "chat",
@@ -166,7 +161,7 @@ if st.session_state.discussion_active:
                         "content": text
                     })
 
-            # 2~3단계: 실시간 난상토론 (티키타카)
+            # 2 ~ (MAX_STEPS - 2) 단계: 실시간 난상토론 (무작위 3명이 티키타카 반박)
             elif current_step < MAX_STEPS - 1:
                 selected_speakers = []
                 temp_pool = list(PHILOSOPHERS.keys())
@@ -184,7 +179,7 @@ if st.session_state.discussion_active:
                         f"{info['prompt']}\n\n"
                         f"[토론 주제] {st.session_state.current_topic}\n\n"
                         f"[대화방 흐름]\n" + ("\n".join(temp_history)) +
-                        f"\n\n지침: 위 대화에서 방금 나온 다른 사람의 말에 꽂히거나 발끈해서 곧바로 1~2줄로 반박해라."
+                        f"\n\n지침: 위 대화에서 방금 나온 다른 사람의 말에 꽂히거나 발끈해서 곧바로 1~2줄로 반박하거나 대화를 이어가라."
                     )
                     try:
                         res = client.chat.completions.create(
@@ -206,7 +201,7 @@ if st.session_state.discussion_active:
                     })
                     temp_history.append(f"{name}: {text}")
 
-            # 마지막단계: 사회자의 깔끔한 정리 표/목록 제공
+            # 마지막 단계: 사회자의 깔끔한 정리
             else:
                 summary_prompt = (
                     f"토론 주제: {st.session_state.current_topic}\n"
