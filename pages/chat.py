@@ -228,7 +228,7 @@ if st.session_state.discussion_active:
         if current_step == 0:
             spinner_msg = "🏛️ 철학자들이 입장해 진중한 첫 입론을 펼치는 중..."
         elif current_step == MAX_STEPS - 1:
-            spinner_msg = "📊 사회자가 토론 내용을 바탕으로 핵심 주장을 정리하는 중..."
+            spinner_msg = "📊 사회자가 이번 주제에 대한 철학자들의 핵심 주장을 정리하는 중..."
         else:
             spinner_msg = f"🔥 톡으로 티키타카 수다를 떠는 중... ({current_step}/{MAX_STEPS-1})"
 
@@ -306,19 +306,19 @@ if st.session_state.discussion_active:
                     })
                     temp_history.append(f"{name}: {text}")
 
-            # 사회자 최종 요약 카드 생성
+            # 사회자 최종 요약 카드 생성 (주제에 대한 핵심 주장 반영)
             else:
                 summary_prompt = (
                     f"토론 주제: {st.session_state.current_topic}\n"
                     f"대화 내용:\n" + "\n".join(history_context) + "\n\n"
-                    "지침: 지금까지 오간 토론 내용을 바탕으로, 사회자로서 각 철학자가 이번 주제에 대해 어떤 핵심 주장을 펼쳤는지 알기 쉽게 정리해 줘.\n"
+                    "지침: 지금까지 오간 토론 내용을 바탕으로, 사회자로서 **이 주제에 대해 각 철학자가 내세운 핵심 주장**을 명확하고 알기 쉽게 정리해 줘.\n"
                     "반드시 아래 형식으로만 작성할 것:\n"
-                    "### 📊 [사회자] 철학자별 핵심 주장 요약\n"
-                    "- **⚡ 니체**: (주제에 대한 핵심 입장)\n"
-                    "- **🦉 소크라테스**: (주제에 대한 핵심 입장)\n"
-                    "- **🦋 장자**: (주제에 대한 핵심 입장)\n"
-                    "- **🕰️ 칸트**: (주제에 대한 핵심 입장)\n"
-                    "- **🦁 홉스**: (주제에 대한 핵심 입장)"
+                    f"### 📊 [사회자] '{st.session_state.current_topic}'에 대한 철학자별 핵심 주장\n"
+                    "- **⚡ 니체**: ...\n"
+                    "- **🦉 소크라테스**: ...\n"
+                    "- **🦋 장자**: ...\n"
+                    "- **🕰️ 칸트**: ...\n"
+                    "- **🦁 홉스**: ..."
                 )
                 try:
                     res = client.chat.completions.create(
@@ -328,12 +328,12 @@ if st.session_state.discussion_active:
                     summary_text = res.choices[0].message.content.strip()
                 except Exception:
                     summary_text = (
-                        "### 📊 [사회자] 철학자별 핵심 주장 요약\n"
-                        "- **⚡ 니체**: 기존 도덕을 해체하고 스스로 가치를 세울 것.\n"
-                        "- **🦉 소크라테스**: 끊임없는 질문으로 무지를 깨달을 것.\n"
-                        "- **🦋 장자**: 세속적 잣대를 벗어나 무위자연을 따를 것.\n"
-                        "- **🕰️ 칸트**: 보편적 도덕 법칙과 의무를 지킬 것.\n"
-                        "- **🦁 홉스**: 강력한 질서와 규범으로 이기심을 통제할 것."
+                        f"### 📊 [사회자] '{st.session_state.current_topic}'에 대한 철학자별 핵심 주장\n"
+                        "- **⚡ 니체**: 기존 도덕을 해체하고 스스로의 가치관으로 판단할 것.\n"
+                        "- **🦉 소크라테스**: 질문을 던져 사안의 본질과 무지를 자각할 것.\n"
+                        "- **🦋 장자**: 세속적인 얽매임에서 벗어나 자연의 흐름을 따를 것.\n"
+                        "- **🕰️ 칸트**: 보편적인 도덕 법칙과 정언명령의 의무를 다할 것.\n"
+                        "- **🦁 홉스**: 혼란을 막기 위해 강력한 질서와 규범을 세울 것."
                     )
 
                 st.session_state.messages.append({
