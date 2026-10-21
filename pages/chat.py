@@ -8,7 +8,7 @@ import streamlit as st
 st.set_page_config(page_title="🏛️ AI 철학자 아고라 카톡방", page_icon="🏛️")
 
 st.title("🏛️ 고대 아고라 실시간 난상토론방")
-st.write("주제를 입력하면 철학자들이 카카오톡 대화방처럼 실시간으로 길고 치열한 티키타카 토론을 벌입니다.")
+st.write("주제가 제시되면 5명의 철학자가 먼저 진중하게 각자의 입장을 밝힌 뒤, 치열한 토론을 이어갑니다.")
 
 # 1. API 키 가져오기
 try:
@@ -23,15 +23,15 @@ client = OpenAI(
     base_url="https://generativelanguage.googleapis.com/v1beta/openai/",
 )
 
-# 3. 5인 철학자 페르소나 정의
+# 3. 5인 철학자 페르소나 정의 (진중한 첫 입론 톤 반영)
 PHILOSOPHERS = {
     "니체": {
         "icon": "⚡",
         "description": "기존 도덕을 해체하고 스스로 가치를 창조하라는 사상가",
         "prompt": (
             "너는 프레드리히 니체다.\n"
-            "- 아고라 광장에서 앞사람의 위선적이거나 나약한 소리를 듣자마자, 차례를 기다리지 않고 곧바로 발끈하며 반박해라.\n"
-            "- 메신저에서 툭 치고 들어가며 상대의 전제를 날카롭게 찌르고, 1~2줄로 짧고 자연스럽게 말해라.\n"
+            "- 첫 입론에서는 진중하고 깊이 있는 사색을 담아, 기존의 무비판적인 도덕이나 관습이 왜 문제인지 너의 철학적 관점에서 진지하게 3~4문장으로 소신을 밝혀라.\n"
+            "- 토론이 진행된 후에는 상대방의 위선적인 태도를 날카롭게 찌르는 반박을 1~2줄로 해라.\n"
             "- 반드시 순수 한국어로만 답해라."
         )
     },
@@ -40,7 +40,8 @@ PHILOSOPHERS = {
         "description": "무지의 자각을 이끌고 진리를 탐구하는 소탈한 철학자",
         "prompt": (
             "너는 소크라테스다.\n"
-            "- 방금 누군가 한 말을 듣고는 피식 웃으며, '친구여, 정말 그런가?' 하고 허를 찌르는 반문을 1~2줄로 던져라.\n"
+            "- 첫 입론에서는 '우리가 진정으로 아는 것은 무엇인가'라는 태도로, 주제의 본질에 다가가기 위한 진중한 성찰과 질문을 3~4문장으로 펼쳐라.\n"
+            "- 토론 중에는 상대의 말에 허를 찌르는 반문을 던져라.\n"
             "- 반드시 순수 한국어로만 답해라."
         )
     },
@@ -49,7 +50,8 @@ PHILOSOPHERS = {
         "description": "무위자연과 물아일체로 세속의 굴레를 가볍게 비워주는 도인",
         "prompt": (
             "너는 장자(莊子)다.\n"
-            "- 사람들이 심각하게 열을 올릴 때, '다들 또 헛소리에 진심이네' 하듯 참지 못하고 툭 끼어들어 1~2줄로 비웃거나 농담을 던져라.\n"
+            "- 첫 입론에서는 인간이 세속의 규범과 인위적인 잣대로 인해 얼마나 스스로를 켕기게 만드는지, 무위자연의 관점에서 3~4문장으로 깊이 있게 짚어주어라.\n"
+            "- 토론 중에는 세속의 아귀다툼을 허허 웃으며 비판해라.\n"
             "- 반드시 순수 한국어로만 답해라."
         )
     },
@@ -58,7 +60,8 @@ PHILOSOPHERS = {
         "description": "보편적 도덕 법칙과 정언명령을 강조하는 원칙주의자",
         "prompt": (
             "너는 이마누엘 칸트다.\n"
-            "- 앞사람이 도덕을 무시하면 정색하고 끼어들어 보편적 원칙을 1~2줄로 단호하게 들이밀어라.\n"
+            "- 첫 입론에서는 이성과 정언명령, 인간의 존엄성과 보편적 도덕 법칙의 관점에서 이 주제를 어떻게 바라봐야 하는지 진지하고 엄숙하게 3~4문장으로 발표해라.\n"
+            "- 토론 중에는 도덕을 무시하는 태도에 엄격하게 반박해라.\n"
             "- 반드시 순수 한국어로만 답해라."
         )
     },
@@ -67,7 +70,8 @@ PHILOSOPHERS = {
         "description": "만인의 만인에 대한 투쟁과 강력한 국가를 주장하는 현실주의자",
         "prompt": (
             "너는 토마스 홉스다.\n"
-            "- 앞사람의 낙관적인 소리에 콧방귀를 뀌며 '나이브한 소리 집어치우세요' 하고 1~2줄로 현실을 짚어주어라.\n"
+            "- 첫 입론에서는 인간의 이기적인 본성과 질서가 없는 상태의 위험성을 지적하며, 현실적인 통제와 사회 계약의 관점에서 3~4문장으로 묵직하게 입장을 밝혀라.\n"
+            "- 토론 중에는 나이브한 주장에 현실적인 팩트를 짚어주어라.\n"
             "- 반드시 순수 한국어로만 답해라."
         )
     }
@@ -105,9 +109,7 @@ if st.session_state.discussion_active:
 
     # 대화방 내역 출력
     for chat in st.session_state.messages:
-        if chat["type"] == "user_topic":
-            st.info(chat["content"])
-        elif chat["type"] == "chat":
+        if chat["type"] == "chat":
             with st.chat_message("assistant", avatar=chat["icon"]):
                 st.markdown(f"**{chat['speaker']}**")
                 st.markdown(chat["content"])
@@ -115,7 +117,7 @@ if st.session_state.discussion_active:
             with st.container():
                 st.success(chat["content"])
 
-    # 대화가 더 길게 이어지도록 MAX_STEPS를 8로 설정 (입론 1회 + 난상토론 6회 + 최종정리 1회)
+    # 총 진행 단계 설정 (입론 1회 + 난상토론 6회 + 최종정리 1회 = 총 8단계)
     MAX_STEPS = 8  
     
     if st.session_state.step_count < MAX_STEPS:
@@ -123,36 +125,36 @@ if st.session_state.discussion_active:
         current_step = st.session_state.step_count
         
         if current_step == 0:
-            spinner_msg = "🏛️ 5명의 철학자가 대화방에 모두 입장해 각자의 생각을 꺼내는 중..."
+            spinner_msg = "🏛️ 5명의 철학자가 대화방에 입장해 주제에 대한 진중한 첫 입론을 펼치는 중..."
         elif current_step == MAX_STEPS - 1:
-            spinner_msg = "📊 사회자가 대화 내용을 바탕으로 철학자별 주장을 정리하는 중..."
+            spinner_msg = "📊 사회자가 대화 내용을 바탕으로 철학자별 주장을 깔끔하게 정리하는 중..."
         else:
             spinner_msg = f"🔥 철학자들이 치열하게 티키타카를 주고받는 중... ({current_step}/{MAX_STEPS-1})"
 
         with st.spinner(spinner_msg):
-            time.sleep(1.0)
+            time.sleep(1.2)
             
             history_context = [f"{m['speaker']}: {m['content']}" for m in st.session_state.messages if m['type'] == 'chat']
             
-            # 1단계 (step 0): 5명 철학자 전부 순서대로 자신의 첫 생각 입론
+            # 1단계 (step 0): 5명 철학자 전부 순서대로 자신의 첫 생각을 '진중하게' 입론
             if current_step == 0:
                 for name, info in PHILOSOPHERS.items():
                     prompt_content = (
                         f"{info['prompt']}\n\n"
                         f"[토론 주제] {st.session_state.current_topic}\n\n"
-                        f"지침: 대화방에 가장 먼저 입장하여, 이 주제에 대한 자신의 첫 번째 생각을 철학적 관점에서 1~2줄로 툭 던져라."
+                        f"지침: 아고라 대화방에 엄숙하게 입장하여, 이 주제에 대한 자신의 첫 번째 생각을 깊이 있고 진중한 사상을 담아 3~4문장으로 발표해라."
                     )
                     try:
                         res = client.chat.completions.create(
                             model="gemini-3.5-flash-lite",
                             messages=[
                                 {"role": "system", "content": prompt_content},
-                                {"role": "user", "content": "첫 생각을 말해줘."}
+                                {"role": "user", "content": "진중한 첫 입론을 시작해줘."}
                             ],
                         )
                         text = res.choices[0].message.content.strip()
                     except Exception:
-                        text = "이 주제에 대해 사색해 봅니다."
+                        text = "이 주제는 우리에게 깊은 사색을 요구합니다."
                     
                     st.session_state.messages.append({
                         "type": "chat",
@@ -179,7 +181,7 @@ if st.session_state.discussion_active:
                         f"{info['prompt']}\n\n"
                         f"[토론 주제] {st.session_state.current_topic}\n\n"
                         f"[대화방 흐름]\n" + ("\n".join(temp_history)) +
-                        f"\n\n지침: 위 대화에서 방금 나온 다른 사람의 말에 꽂히거나 발끈해서 곧바로 1~2줄로 반박하거나 대화를 이어가라."
+                        f"\n\n지침: 위 대화에서 방금 나온 다른 사람의 말에 꽂히거나 발끈해서 곧바로 1~2줄로 짧고 날카롭게 반박해라."
                     )
                     try:
                         res = client.chat.completions.create(
@@ -191,7 +193,7 @@ if st.session_state.discussion_active:
                         )
                         text = res.choices[0].message.content.strip()
                     except Exception:
-                        text = "동의할 수 없네요."
+                        text = "그 주장은 동의할 수 없군요."
                     
                     st.session_state.messages.append({
                         "type": "chat",
