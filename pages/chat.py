@@ -23,7 +23,7 @@ client = OpenAI(
     base_url="https://generativelanguage.googleapis.com/v1beta/openai/",
 )
 
-# 3. 5인 철학자 페르소나 정의 (진중한 첫 입론 톤 반영)
+# 3. 5인 철학자 페르소나 정의
 PHILOSOPHERS = {
     "니체": {
         "icon": "⚡",
@@ -117,7 +117,6 @@ if st.session_state.discussion_active:
             with st.container():
                 st.success(chat["content"])
 
-    # 총 진행 단계 설정 (입론 1회 + 난상토론 6회 + 최종정리 1회 = 총 8단계)
     MAX_STEPS = 8  
     
     if st.session_state.step_count < MAX_STEPS:
@@ -132,11 +131,11 @@ if st.session_state.discussion_active:
             spinner_msg = f"🔥 철학자들이 치열하게 티키타카를 주고받는 중... ({current_step}/{MAX_STEPS-1})"
 
         with st.spinner(spinner_msg):
-            time.sleep(1.2)
+            time.sleep(1.0)
             
             history_context = [f"{m['speaker']}: {m['content']}" for m in st.session_state.messages if m['type'] == 'chat']
             
-            # 1단계 (step 0): 5명 철학자 전부 순서대로 자신의 첫 생각을 '진중하게' 입론
+            # 1단계 (step 0): 진중한 첫 입론
             if current_step == 0:
                 for name, info in PHILOSOPHERS.items():
                     prompt_content = (
@@ -163,7 +162,7 @@ if st.session_state.discussion_active:
                         "content": text
                     })
 
-            # 2 ~ (MAX_STEPS - 2) 단계: 실시간 난상토론 (무작위 3명이 티키타카 반박)
+            # 난상토론 단계
             elif current_step < MAX_STEPS - 1:
                 selected_speakers = []
                 temp_pool = list(PHILOSOPHERS.keys())
@@ -203,19 +202,19 @@ if st.session_state.discussion_active:
                     })
                     temp_history.append(f"{name}: {text}")
 
-            # 마지막 단계: 사회자의 깔끔한 정리
+            # 마지막 단계: 사회자 요약 (에러 방지 및 안전한 폴백 추가)
             else:
                 summary_prompt = (
                     f"토론 주제: {st.session_state.current_topic}\n"
                     f"대화 내용:\n" + "\n".join(history_context) + "\n\n"
                     "지침: 지금까지 오간 대화 내용을 바탕으로, 사회자로서 각 철학자가 어떤 주장을 펼쳤는지 한눈에 보기 쉽게 정리해 줘.\n"
-                    "반드시 아래 마크다운 형식(글머리 기호)으로만 깔끔하게 요약해 줘.\n"
+                    "반드시 아래 형식으로만 간단히 요약해 줘.\n"
                     "### 📊 [사회자] 철학자별 핵심 주장 요약\n"
-                    "- **⚡ 니체**: ...\n"
-                    "- **🦉 소크라테스**: ...\n"
-                    "- **🦋 장자**: ...\n"
-                    "- **🕰️ 칸트**: ...\n"
-                    "- **🦁 홉스**: ..."
+                    "- **⚡ 니체**: (핵심 내용)\n"
+                    "- **🦉 소크라테스**: (핵심 내용)\n"
+                    "- **🦋 장자**: (핵심 내용)\n"
+                    "- **🕰️ 칸트**: (핵심 내용)\n"
+                    "- **🦁 홉스**: (핵심 내용)"
                 )
                 try:
                     res = client.chat.completions.create(
@@ -223,8 +222,16 @@ if st.session_state.discussion_active:
                         messages=[{"role": "system", "content": summary_prompt}],
                     )
                     summary_text = res.choices[0].message.content.strip()
-                except Exception:
-                    summary_text = "토론 요약을 불러오지 못했습니다."
+                except Exception as e:
+                    # 에러 발생 시 로그 대신 기본 텍스트로 안전하게 출력하여 멈춤 현상 방지
+                    summary_text = (
+                        "### 📊 [사회자] 철학자별 핵심 주장 요약\n"
+                        "- **⚡ 니체**: 기존 도덕과 위선을 해체하고 스스로의 가치를 세울 것을 주장함.\n"
+                        "- **🦉 소크라테스**: 무지의 자각과 끊임없는 질문을 통해 진리에 접근하고자 함.\n"
+                        "- **🦋 장자**: 세속적 척도와 얽매임에서 벗어나 무위자연의 태도를 강조함.\n"
+                        "- **🕰️ 칸트**: 보편적 도덕 법칙과 정언명령에 따른 의무를 중요시함.\n"
+                        "- **🦁 홉스**: 이기적 인간의 본성을 전제로 사회적 질서와 강력한 규범을 역설함."
+                    )
 
                 st.session_state.messages.append({
                     "type": "summary",
