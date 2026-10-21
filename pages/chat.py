@@ -90,12 +90,14 @@ st.markdown("""
         white-space: nowrap;
     }
 
-    .summary-box {
-        background-color: rgba(255, 255, 255, 0.95);
+    /* 사회자 최종 요약 카드 스타일 */
+    .summary-card {
+        background-color: #FFFFFF;
         border-radius: 16px;
-        padding: 20px;
-        margin-top: 25px;
-        box-shadow: 0 3px 8px rgba(0,0,0,0.12);
+        padding: 22px;
+        margin-top: 20px;
+        margin-bottom: 20px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
         color: #111111;
         line-height: 1.6;
     }
@@ -211,7 +213,7 @@ if st.session_state.discussion_active:
             
         elif chat["type"] == "summary":
             st.markdown(f"""
-            <div class="summary-box">
+            <div class="summary-card">
                 {chat['content'].replace('\n', '<br>')}
             </div>
             """, unsafe_allow_html=True)
@@ -226,7 +228,7 @@ if st.session_state.discussion_active:
         if current_step == 0:
             spinner_msg = "🏛️ 철학자들이 입장해 진중한 첫 입론을 펼치는 중..."
         elif current_step == MAX_STEPS - 1:
-            spinner_msg = "📊 사회자가 내용을 요약하는 중..."
+            spinner_msg = "📊 사회자가 토론 내용을 바탕으로 핵심 주장을 정리하는 중..."
         else:
             spinner_msg = f"🔥 톡으로 티키타카 수다를 떠는 중... ({current_step}/{MAX_STEPS-1})"
 
@@ -235,7 +237,7 @@ if st.session_state.discussion_active:
             
             history_context = [f"{m['speaker']}: {m['content']}" for m in st.session_state.messages if m['type'] == 'chat']
             
-            # 1단계: 초반 입론만 길고 진중하게 (3~4문장)
+            # 1단계: 초반 입론 (3~4문장)
             if current_step == 0:
                 for name, info in PHILOSOPHERS.items():
                     intro_prompt = (
@@ -263,7 +265,7 @@ if st.session_state.discussion_active:
                         "time": now_time
                     })
 
-            # 난상토론 단계: 이후부터는 짧게 1~2문장
+            # 난상토론 단계 (1~2문장)
             elif current_step < MAX_STEPS - 1:
                 selected_speakers = []
                 temp_pool = list(PHILOSOPHERS.keys())
@@ -304,19 +306,19 @@ if st.session_state.discussion_active:
                     })
                     temp_history.append(f"{name}: {text}")
 
-            # 사회자 최종 요약
+            # 사회자 최종 요약 카드 생성
             else:
                 summary_prompt = (
                     f"토론 주제: {st.session_state.current_topic}\n"
                     f"대화 내용:\n" + "\n".join(history_context) + "\n\n"
-                    "지침: 지금까지 오간 대화 내용을 바탕으로 사회자로서 각 철학자의 핵심 주장을 요약해라.\n"
-                    "반드시 아래 마크다운 형식으로만 정리할 것:\n"
+                    "지침: 지금까지 오간 토론 내용을 바탕으로, 사회자로서 각 철학자가 이번 주제에 대해 어떤 핵심 주장을 펼쳤는지 알기 쉽게 정리해 줘.\n"
+                    "반드시 아래 형식으로만 작성할 것:\n"
                     "### 📊 [사회자] 철학자별 핵심 주장 요약\n"
-                    "- **⚡ 니체**: ...\n"
-                    "- **🦉 소크라테스**: ...\n"
-                    "- **🦋 장자**: ...\n"
-                    "- **🕰️ 칸트**: ...\n"
-                    "- **🦁 홉스**: ..."
+                    "- **⚡ 니체**: (주제에 대한 핵심 입장)\n"
+                    "- **🦉 소크라테스**: (주제에 대한 핵심 입장)\n"
+                    "- **🦋 장자**: (주제에 대한 핵심 입장)\n"
+                    "- **🕰️ 칸트**: (주제에 대한 핵심 입장)\n"
+                    "- **🦁 홉스**: (주제에 대한 핵심 입장)"
                 )
                 try:
                     res = client.chat.completions.create(
@@ -326,7 +328,7 @@ if st.session_state.discussion_active:
                     summary_text = res.choices[0].message.content.strip()
                 except Exception:
                     summary_text = (
-                        "📊 [사회자] 철학자별 핵심 주장 요약\n"
+                        "### 📊 [사회자] 철학자별 핵심 주장 요약\n"
                         "- **⚡ 니체**: 기존 도덕을 해체하고 스스로 가치를 세울 것.\n"
                         "- **🦉 소크라테스**: 끊임없는 질문으로 무지를 깨달을 것.\n"
                         "- **🦋 장자**: 세속적 잣대를 벗어나 무위자연을 따를 것.\n"
@@ -343,7 +345,8 @@ if st.session_state.discussion_active:
             st.rerun()
 
     else:
-        st.success("🎉 토론이 종료되었습니다!")
+        # 토론 종료 알림 및 재시작 버튼
+        st.success("🎉 아고라 광장의 열띤 토론이 모두 종료되었습니다!")
         if st.button("🔄 새로운 주제로 대화하기"):
             st.session_state.messages = []
             st.session_state.discussion_active = False
