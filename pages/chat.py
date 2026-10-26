@@ -120,7 +120,7 @@ client = OpenAI(
     base_url="https://generativelanguage.googleapis.com/v1beta/openai/",
 )
 
-# 3. 5인 철학자 페르소나 정의 (고등학생 눈높이 + 상호 반박 집중)
+# 3. 5인 철학자 페르소나 정의
 PHILOSOPHERS = {
     "니체": {
         "icon": "⚡",
@@ -237,7 +237,7 @@ if st.session_state.discussion_active:
             # 1단계: 초반 입론 (문장별 분리)
             if current_step == 0:
                 for name, info in PHILOSOPHERS.items():
-                    intro_prompt = (
+                    intro_content = (
                         f"{info['prompt']}\n\n"
                         f"[토론 주제] {st.session_state.current_topic}\n\n"
                         f"지침: 이 주제에 대한 너의 철학적 입장을 2~3문장으로 진중하게 밝혀라. 고등학생이 직관적으로 이해할 수 있는 쉬운 어휘를 써라."
@@ -246,8 +246,7 @@ if st.session_state.discussion_active:
                         res = client.chat.completions.create(
                             model="gemini-3.5-flash-lite",
                             messages=[
-                                {"role": "system", "content": intro_prompt},
-                                {"role": "user", "content": "첫 생각을 말해줘."}
+                                {"role": "user", "content": intro_content}
                             ],
                         )
                         text = res.choices[0].message.content.strip()
@@ -282,7 +281,7 @@ if st.session_state.discussion_active:
                 temp_history = list(flat_history)
                 for name in selected_speakers:
                     info = PHILOSOPHERS[name]
-                    prompt_content = (
+                    debate_content = (
                         f"{info['prompt']}\n\n"
                         f"[토론 주제] {st.session_state.current_topic}\n\n"
                         f"[지금까지의 대화 흐름]\n" + ("\n".join(temp_history)) +
@@ -292,8 +291,7 @@ if st.session_state.discussion_active:
                         res = client.chat.completions.create(
                             model="gemini-3.5-flash-lite",
                             messages=[
-                                {"role": "system", "content": prompt_content},
-                                {"role": "user", "content": "상대의 말을 반박해줘."}
+                                {"role": "user", "content": debate_content}
                             ],
                         )
                         text = res.choices[0].message.content.strip()
@@ -315,9 +313,9 @@ if st.session_state.discussion_active:
                     })
                     temp_history.append(f"{name}: {text}")
 
-            # 사회자 최종 요약 카드 생성 (실제 대화 반영)
+            # 사회자 최종 요약 카드 생성 (API 실패 시 주제에 맞춘 철학자별 관점 신규 생성)
             else:
-                summary_prompt = (
+                summary_content = (
                     f"토론 주제: {st.session_state.current_topic}\n"
                     f"실제 대화 내용:\n" + "\n".join(flat_history) + "\n\n"
                     f"지침: 위 대화방에서 각 철학자가 실제로 주고받은 주장과 반박 내용을 바탕으로, 사회자로서 이번 주제('{st.session_state.current_topic}')에 대한 철학자별 핵심 입장을 고등학생 눈높이에 맞춰 요약해 줘.\n"
@@ -332,24 +330,14 @@ if st.session_state.discussion_active:
                 try:
                     res = client.chat.completions.create(
                         model="gemini-3.5-flash-lite",
-                        messages=[{"role": "system", "content": summary_prompt}],
+                        messages=[
+                            {"role": "user", "content": summary_content}
+                        ],
                     )
                     summary_text = res.choices[0].message.content.strip()
-                except Exception as e:
-                    summary_text = f"### 📊 [사회자] 요약 생성 중 오류가 발생했습니다: {e}"
-
-                st.session_state.messages.append({
-                    "type": "summary",
-                    "content": summary_text
-                })
-
-            st.session_state.step_count += 1
-            st.rerun()
-
-    else:
-        st.success("🎉 아고라 광장의 열띤 토론이 모두 종료되었습니다!")
-        if st.button("🔄 새로운 주제로 대화하기"):
-            st.session_state.messages = []
-            st.session_state.discussion_active = False
-            st.session_state.step_count = 0
-            st.rerun()
+                except Exception:
+                    # API 실패 시, 고정 문구 대신 주제('{st.session_state.current_topic}')에 맞는 관점을 새로 유추하여 사회자 브리핑 형식으로 생성
+                    try:
+                        fallback_prompt = (
+                            f"토론 주제: {st.session_state.current_topic}\n"
+                            f"지침: 통신 오류로 전체 대화 기록을 불러오지 못했습니다. 사회자로서 이번 주제('{st.session_state.current_topic}')에 대해 니체, 소크라테스, 장자, 칸트, 홉스가 각각 어떤 고유한 관점과 주장을 펼쳤
