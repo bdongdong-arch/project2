@@ -120,32 +120,32 @@ client = OpenAI(
     base_url="https://generativelanguage.googleapis.com/v1beta/openai/",
 )
 
-# 3. 5인 철학자 페르소나 정의 (고등학생 눈높이)
+# 3. 5인 철학자 페르소나 정의 (고등학생 눈높이 + 구체적인 반박 유도)
 PHILOSOPHERS = {
     "니체": {
         "icon": "⚡",
         "description": "기존 도덕을 깨부수고 스스로 가치를 만들라는 사상가",
-        "prompt": "너는 프레드리히 니체다. 고등학생도 이해할 수 있게 쉬운 단어로, 기존의 뻔한 틀을 깨고 스스로 주인이 되라는 생각을 1~2문장으로 짧게 반박해라. 반드시 순수 한국어로만 답해라."
+        "prompt": "너는 프레드리히 니체다. 상대의 말에 단순 동조하거나 뻔한 비판을 하지 말고, 기존의 틀을 깨는 너만의 새로운 주장을 1~2문장으로 선언해라. 고등학생이 이해하기 쉽게 쉬운 단어를 써라."
     },
     "소크라테스": {
         "icon": "🦉",
         "description": "질문을 통해 자신의 무지를 깨닫게 하는 철학자",
-        "prompt": "너는 소크라테스다. 고등학생도 이해할 수 있게 쉬운 단어로, 우리가 제대로 알고 있는지 스스로 돌아보게 만드는 질문을 1~2문장으로 던져라. 반드시 순수 한국어로만 답해라."
+        "prompt": "너는 소크라테스다. 상대의 말에 뻔한 답변을 피하고, 우리가 놓치고 있는 본질을 찌르는 새로운 질문이나 주장을 1~2문장으로 던져라. 고등학생이 이해하기 쉽게 쉬운 단어를 써라."
     },
     "장자": {
         "icon": "🦋",
         "description": "자연의 흐름에 맡기고 억지로 하지 말라는 도인",
-        "prompt": "너는 장자다. 고등학생도 이해할 수 있게 쉬운 단어로, 억지로 얽매이지 말고 자연스럽게 흘러가자는 생각을 1~2문장으로 재치 있게 말해라. 반드시 순수 한국어로만 답해라."
+        "prompt": "너는 장자다. 상대의 말에 얽매이지 말고, 억지 규율을 벗어나 자연스럽게 흐르자는 너만의 새로운 관점을 1~2문장으로 재치 있게 제시해라. 고등학생이 이해하기 쉽게 쉬운 단어를 써라."
     },
     "칸트": {
         "icon": "🕰️",
         "description": "누구나 지켜야 할 보편적인 도덕 원칙을 강조하는 원칙주의자",
-        "prompt": "너는 이마누엘 칸트다. 고등학생도 쉽게, 누구에게나 적용되는 보편적인 도덕 원칙과 의무를 지켜야 한다는 생각을 1~2문장으로 단호하게 말해라. 반드시 순수 한국어로만 답해라."
+        "prompt": "너는 이마누엘 칸트다. 상대의 주장에 흔들리지 말고, 보편적인 의무와 도덕 법칙에 근거한 확고하고 새로운 주장을 1~2문장으로 단호하게 말해라. 고등학생이 이해하기 쉽게 쉬운 단어를 써라."
     },
     "홉스": {
         "icon": "🦁",
         "description": "인간의 이기심을 막기 위해 강력한 법과 질서가 필요하다는 현실주의자",
-        "prompt": "너는 토마스 홉스다. 고등학생 수준에 맞춰, 사람은 이기적이어서 강력한 법과 통제가 없으면 혼란에 빠진다는 생각을 1~2문장으로 팩트를 짚어라. 반드시 순수 한국어로만 답해라."
+        "prompt": "너는 토마스 홉스다. 나이브한 주장을 깎아내리며, 인간의 이기심을 통제할 강력한 질서가 왜 필요한지 새로운 현실적 논거를 1~2문장으로 제시해라. 고등학생이 이해하기 쉽게 쉬운 단어를 써라."
     }
 }
 
@@ -240,7 +240,7 @@ if st.session_state.discussion_active:
                     intro_prompt = (
                         f"{info['prompt']}\n\n"
                         f"[토론 주제] {st.session_state.current_topic}\n\n"
-                        f"지침: 이 주제에 대한 너의 철학적 생각을 2~3문장으로 진중하게 밝혀라. 고등학생이 직관적으로 이해할 수 있는 쉬운 어휘를 써라."
+                        f"지침: 이 주제에 대한 너의 철학적 입장을 2~3문장으로 진중하게 밝혀라. 고등학생이 직관적으로 이해할 수 있는 쉬운 어휘를 써라."
                     )
                     try:
                         res = client.chat.completions.create(
@@ -252,7 +252,7 @@ if st.session_state.discussion_active:
                         )
                         text = res.choices[0].message.content.strip()
                     except Exception:
-                        text = "이 주제는 우리가 다 같이 고민해볼 가치가 있는 중요한 문제입니다."
+                        text = "이 주제는 우리가 다 같이 깊이 고민해봐야 할 중요한 문제입니다."
                     
                     sentences = [s.strip() for s in text.replace('!', '!|').replace('?', '?|').replace('.', '.|').split('|') if s.strip()]
                     if not sentences:
@@ -266,7 +266,7 @@ if st.session_state.discussion_active:
                         "time": now_time
                     })
 
-            # 난상토론 단계
+            # 난상토론 단계 (새로운 주장과 논거 제시)
             elif current_step < MAX_STEPS - 1:
                 selected_speakers = []
                 temp_pool = list(PHILOSOPHERS.keys())
@@ -284,19 +284,19 @@ if st.session_state.discussion_active:
                         f"{info['prompt']}\n\n"
                         f"[토론 주제] {st.session_state.current_topic}\n\n"
                         f"[대화방 흐름]\n" + ("\n".join(temp_history)) +
-                        f"\n\n지침: 직전 대화에 맞춰 1~2문장으로 즉각 반박하고, 고등학생도 이해하기 쉽게 아주 쉽게 말해라."
+                        f"\n\n지침: 직전 대화에 얽매이지 말고, 이 주제를 향한 **너만의 새로운 주장이나 날카로운 논거**를 1~2문장으로 새롭게 꺼내어 말해라."
                     )
                     try:
                         res = client.chat.completions.create(
                             model="gemini-3.5-flash-lite",
                             messages=[
                                 {"role": "system", "content": prompt_content},
-                                {"role": "user", "content": "반박해줘."}
+                                {"role": "user", "content": "새로운 주장을 펼쳐줘."}
                             ],
                         )
                         text = res.choices[0].message.content.strip()
                     except Exception:
-                        text = "그 방식은 문제의 본질을 잘못 짚은 것 같네요."
+                        text = "오히려 이 문제는 다른 각도에서 바라보아야 합니다."
                     
                     sentences = [s.strip() for s in text.replace('!', '!|').replace('?', '?|').replace('.', '.|').split('|') if s.strip()]
                     if not sentences:
@@ -323,37 +323,4 @@ if st.session_state.discussion_active:
                     "- **⚡ 니체**: (고등학생 눈높이의 핵심 주장 1문장)\n"
                     "- **🦉 소크라테스**: (고등학생 눈높이의 핵심 주장 1문장)\n"
                     "- **🦋 장자**: (고등학생 눈높이의 핵심 주장 1문장)\n"
-                    "- **🕰️ 칸트**: (고등학생 눈높이의 핵심 주장 1문장)\n"
-                    "- **🦁 홉스**: (고등학생 눈높이의 핵심 주장 1문장)"
-                )
-                try:
-                    res = client.chat.completions.create(
-                        model="gemini-3.5-flash-lite",
-                        messages=[{"role": "system", "content": summary_prompt}],
-                    )
-                    summary_text = res.choices[0].message.content.strip()
-                except Exception:
-                    summary_text = (
-                        f"### 📊 [사회자] '{st.session_state.current_topic}'에 대한 철학자별 핵심 주장\n"
-                        "- **⚡ 니체**: 기존 도덕에 얽매이지 말고 스스로 삶의 주인이 되어 가치를 만들어야 한다.\n"
-                        "- **🦉 소크라테스**: 내가 잘 모른다는 사실을 깨닫고 질문을 통해 진리를 찾아가야 한다.\n"
-                        "- **🦋 장자**: 세속적 기준에 얽매이지 말고 자연스러운 흐름(무위자연)에 맡겨야 한다.\n"
-                        "- **🕰️ 칸트**: 누구에게나 예외 없이 적용되는 보편적인 도덕 원칙을 따라야 한다.\n"
-                        "- **🦁 홉스**: 인간의 이기심으로 인한 혼란을 막으려면 강력한 법과 통제가 필요하다."
-                    )
-
-                st.session_state.messages.append({
-                    "type": "summary",
-                    "content": summary_text
-                })
-
-            st.session_state.step_count += 1
-            st.rerun()
-
-    else:
-        st.success("🎉 아고라 광장의 열띤 토론이 모두 종료되었습니다!")
-        if st.button("🔄 새로운 주제로 대화하기"):
-            st.session_state.messages = []
-            st.session_state.discussion_active = False
-            st.session_state.step_count = 0
-            st.rerun()
+                    "- **🕰️ 칸트**: (고등학생 눈높이의 핵심 주장 1문장
