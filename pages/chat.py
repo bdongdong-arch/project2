@@ -352,4 +352,105 @@ if st.session_state.discussion_active:
                 
                 # 입론이 모두 끝난 직후 공지 바와 "공지가 등록되었습니다" 말풍선 추가 후 일시 정지
                 st.session_state.show_notice_bar = True
-                st.session_state.messages.
+                st.session_state.messages.append({
+                    "type": "notice_card"
+                })
+                st.session_state.waiting_for_tikitaka_choice = True
+                st.session_state.step_count += 1
+                st.rerun()
+
+            # 난상토론 단계
+            elif current_step < MAX_STEPS - 1:
+                selected_speakers = []
+                temp_pool = list(PHILOSOPHERS.keys())
+                random.shuffle(temp_pool)
+                for s in temp_pool:
+                    if s not in selected_speakers:
+                        selected_speakers.append(s)
+                    if len(selected_speakers) >= 3:
+                        break
+
+                temp_history = list(flat_history)
+                for name in selected_speakers:
+                    info = PHILOSOPHERS[name]
+                    debate_content = (
+                        f"{info['prompt']}\n\n"
+                        f"[토론 주제] {st.session_state.current_topic}\n\n"
+                        f"[지금까지의 대화 흐름]\n" + ("\n".join(temp_history)) +
+                        f"\n\n지침: 직전에 오간 대화 내용을 반드시 의식하고, 바로 직전에 발언한 내용이나 상대방의 논리를 구체적으로 지목하며 1~2문장으로 날카롭게 반박해라."
+                    )
+                    try:
+                        res = client.chat.completions.create(
+                            model="gemini-3.5-flash-lite",
+                            messages=[
+                                {"role": "user", "content": debate_content}
+                            ],
+                        )
+                        text = res.choices[0].message.content.strip()
+                        if not text:
+                            continue
+                    except Exception:
+                        continue
+                    
+                    sentences = [s.strip() for s in text.replace('!', '!|').replace('?', '?|').replace('.', '.|').split('|') if s.strip()]
+                    if not sentences:
+                        continue
+
+                    st.session_state.messages.append({
+                        "type": "chat",
+                        "speaker": name,
+                        "icon": info["icon"],
+                        "lines": sentences,
+                        "time": now_time
+                    })
+                    temp_history.append(f"{name}: {text}")
+
+            # 사회자 최종 요약 카드 생성
+            else:
+                summary_content = (
+                    f"토론 주제: {st.session_state.current_topic}\n"
+                    f"실제 대화 내용:\n" + "\n".join(flat_history) + "\n\n"
+                    f"지침: 위 대화방에서 각 철학자가 실제로 주고받은 주장과 반박 내용을 바탕으로, 사회자로서 이번 주제('{st.session_state.current_topic}')에 대한 철학자별 핵심 입장을 고등학생 눈높이에 맞춰 요약해 줘.\n"
+                    "반드시 아래 마크다운 형식으로만 작성할 것:\n"
+                    f"### 📊 [사회자] '{st.session_state.current_topic}'에 대한 철학자별 핵심 주장\n"
+                    "- **⚡ 니체**: (실제 대화에서 니체가 펼친 주장을 반영한 1문장)\n"
+                    "- **🦉 소크라테스**: (실제 대화에서 소크라테스가 펼친 주장을 반영한 1문장)\n"
+                    "- **🦋 장자**: (실제 대화에서 장자가 펼친 주장을 반영한 1문장)\n"
+                    "- **🕰️ 칸트**: (실제 대화에서 칸트가 펼친 주장을 반영한 1문장)\n"
+                    "- **🦁 홉스**: (실제 대화에서 홉스가 펼친 주장을 반영한 1문장)"
+                )
+                try:
+                    res = client.chat.completions.create(
+                        model="gemini-3.5-flash-lite",
+                        messages=[
+                            {"role": "user", "content": summary_content}
+                        ],
+                    )
+                    summary_text = res.choices[0].message.content.strip()
+                except Exception:
+                    try:
+                        fallback_prompt = (
+                            f"토론 주제: {st.session_state.current_topic}\n"
+                            f"지침: 사회자로서 이번 주제('{st.session_state.current_topic}')에 대해 니체, 소크라테스, 장자, 칸트, 홉스가 각각 어떤 고유한 관점과 주장을 펼칠지 고등학생 눈높이에 맞춰 마크다운 형식으로 새로 작성해 주세요.\n"
+                            "반드시 아래 형식으로만 작성할 것:\n"
+                            f"### 📊 [사회자] '{st.session_state.current_topic}'에 대한 철학자별 핵심 주장\n"
+                            "- **⚡ 니체**: (주제에 맞는 니체 관점 1문장)\n"
+                            "- **🦉 소크라테스**: (주제에 맞는 소크라테스 관점 1문장)\n"
+                            "- **🦋 장자**: (주제에 맞는 장자 관점 1문장)\n"
+                            "- **🕰️ 칸트**: (주제에 맞는 칸트 관점 1문장)\n"
+                            "- **🦁 홉스**: (주제에 맞는 홉스 관점 1문장)"
+                        )
+                        fb_res = client.chat.completions.create(
+                            model="gemini-3.5-flash-lite",
+                            messages=[{"role": "user", "content": fallback_prompt}],
+                        )
+                        summary_text = fb_res.choices[0].message.content.strip()
+                    except Exception:
+                        summary_text = (
+                            f"### 📊 [사회자] '{st.session_state.current_topic}'에 대한 종합 브리핑\n"
+                            f"이번 주제인 '{st.session_state.current_topic}'에 대해 각 철학자들은 기존의 틀을 깨는 자율성(니체), 본질을 묻는 비판적 사고(소크라테스), 억지스러움을 버리는 자연스러움(장자), 보편적 의무(칸트), 그리고 사회적 질서와 통제(홉스)의 관점에서 깊이 있는 성찰을 나누어 주었습니다."
+                        )
+
+                st.session_state.messages.append({
+                    "type": "summary",
+                    "content":
