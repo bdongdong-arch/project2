@@ -35,7 +35,7 @@ st.markdown("""
 
     .kakao-msg-container {
         display: flex;
-        margin-bottom: 14px;
+        margin-bottom: 16px;
         align-items: flex-start;
     }
     
@@ -56,6 +56,7 @@ st.markdown("""
     .kakao-content {
         display: flex;
         flex-direction: column;
+        max-width: 360px;
     }
     
     .kakao-name {
@@ -79,7 +80,6 @@ st.markdown("""
         border-top-left-radius: 2px;
         font-size: 0.95rem;
         line-height: 1.4;
-        max-width: 340px;
         word-break: break-word;
         box-shadow: 0 1px 3px rgba(0,0,0,0.12);
     }
@@ -89,6 +89,7 @@ st.markdown("""
         color: #4B637E;
         margin-left: 6px;
         white-space: nowrap;
+        flex-shrink: 0;
     }
 
     .summary-card {
@@ -119,58 +120,32 @@ client = OpenAI(
     base_url="https://generativelanguage.googleapis.com/v1beta/openai/",
 )
 
-# 3. 5인 철학자 페르소나 정의
+# 3. 5인 철학자 페르소나 정의 (고등학생 눈높이)
 PHILOSOPHERS = {
     "니체": {
         "icon": "⚡",
         "description": "기존 도덕을 깨부수고 스스로 가치를 만들라는 사상가",
-        "prompt": (
-            "너는 프레드리히 니체다.\n"
-            "- 고등학생도 이해할 수 있게 쉬운 단어로 말해라. 어렵고 딱딱한 철학 용어는 피해라.\n"
-            "- '기존의 틀이나 뻔한 도덕을 깨고 스스로 주인이 되어라'라는 핵심 개념을 강조해라.\n"
-            "- 토론 중에는 1~2문장으로 짧게 반박해라.\n"
-            "- 반드시 순수 한국어로만 답해라."
-        )
+        "prompt": "너는 프레드리히 니체다. 고등학생도 이해할 수 있게 쉬운 단어로, 기존의 뻔한 틀을 깨고 스스로 주인이 되라는 생각을 1~2문장으로 짧게 반박해라. 반드시 순수 한국어로만 답해라."
     },
     "소크라테스": {
         "icon": "🦉",
         "description": "질문을 통해 자신의 무지를 깨닫게 하는 철학자",
-        "prompt": (
-            "너는 소크라테스다.\n"
-            "- 고등학생도 이해할 수 있게 쉬운 단어로 말해라.\n"
-            "- '우리가 정말 제대로 알고 있는지 스스로 돌아봐야 한다'는 무지의 자각 개념을 강조하며 1~2문장으로 질문을 던져라.\n"
-            "- 반드시 순수 한국어로만 답해라."
-        )
+        "prompt": "너는 소크라테스다. 고등학생도 이해할 수 있게 쉬운 단어로, 우리가 제대로 알고 있는지 스스로 돌아보게 만드는 질문을 1~2문장으로 던져라. 반드시 순수 한국어로만 답해라."
     },
     "장자": {
         "icon": "🦋",
         "description": "자연의 흐름에 맡기고 억지로 하지 말라는 도인",
-        "prompt": (
-            "너는 장자(莊子)다.\n"
-            "- 고등학생도 이해할 수 있게 가볍고 쉬운 단어로 말해라.\n"
-            "- '억지로 얽매이지 말고 자연스럽게(무위자연) 흘러가자'는 핵심 생각을 담아 1~2문장으로 재치 있게 말해라.\n"
-            "- 반드시 순수 한국어로만 답해라."
-        )
+        "prompt": "너는 장자다. 고등학생도 이해할 수 있게 쉬운 단어로, 억지로 얽매이지 말고 자연스럽게 흘러가자는 생각을 1~2문장으로 재치 있게 말해라. 반드시 순수 한국어로만 답해라."
     },
     "칸트": {
         "icon": "🕰️",
         "description": "누구나 지켜야 할 보편적인 도덕 원칙을 강조하는 원칙주의자",
-        "prompt": (
-            "너는 이마누엘 칸트다.\n"
-            "- 고등학생도 쉽게 알아들을 수 있게 표현해라.\n"
-            "- '누구에게나 적용되는 보편적인 도덕 법칙과 의무를 지켜야 한다'는 핵심을 담아 1~2문장으로 단호하게 말해라.\n"
-            "- 반드시 순수 한국어로만 답해라."
-        )
+        "prompt": "너는 이마누엘 칸트다. 고등학생도 쉽게, 누구에게나 적용되는 보편적인 도덕 원칙과 의무를 지켜야 한다는 생각을 1~2문장으로 단호하게 말해라. 반드시 순수 한국어로만 답해라."
     },
     "홉스": {
         "icon": "🦁",
         "description": "인간의 이기심을 막기 위해 강력한 법과 질서가 필요하다는 현실주의자",
-        "prompt": (
-            "너는 토마스 홉스다.\n"
-            "- 고등학생 수준에 맞춰 쉽고 현실적인 단어를 써라.\n"
-            "- '사람은 이기적이어서 강력한 법과 통제가 없으면 혼란에 빠진다'는 생각을 담아 1~2문장으로 팩트를 짚어라.\n"
-            "- 반드시 순수 한국어로만 답해라."
-        )
+        "prompt": "너는 토마스 홉스다. 고등학생 수준에 맞춰, 사람은 이기적이어서 강력한 법과 통제가 없으면 혼란에 빠진다는 생각을 1~2문장으로 팩트를 짚어라. 반드시 순수 한국어로만 답해라."
     }
 }
 
@@ -202,7 +177,7 @@ if st.session_state.discussion_active:
     
     st.markdown(f'<div class="kakaotalk-notice">📌 [토론 주제] {st.session_state.current_topic}</div>', unsafe_allow_html=True)
 
-    # 대화 출력
+    # 대화 출력 (안전한 HTML 구조화)
     for chat in st.session_state.messages:
         if chat["type"] == "chat":
             lines = chat["lines"]
@@ -240,7 +215,6 @@ if st.session_state.discussion_active:
         current_step = st.session_state.step_count
         now_time = datetime.now().strftime("%p %I:%M").replace("AM", "오전").replace("PM", "오후")
         
-        # 💡 초반 입론 단계 로딩 스피너 문구 명시
         if current_step == 0:
             spinner_msg = "🏛️ 철학자들이 입장해 첫 생각을 진중하게 발표하는 중..."
         elif current_step == MAX_STEPS - 1:
@@ -256,15 +230,13 @@ if st.session_state.discussion_active:
                 if m['type'] == 'chat':
                     flat_history.append(f"{m['speaker']}: {' '.join(m['lines'])}")
 
-            # 1단계: 초반 입론
+            # 1단계: 초반 입론 (한 말풍선에 묶어서 출력)
             if current_step == 0:
                 for name, info in PHILOSOPHERS.items():
                     intro_prompt = (
                         f"{info['prompt']}\n\n"
                         f"[토론 주제] {st.session_state.current_topic}\n\n"
-                        f"지침:\n"
-                        f"1. 이 주제에 대한 너의 철학적 생각을 2~3문장으로 진중하게 밝혀라.\n"
-                        f"2. 어렵고 복잡한 사상 용어 대신, 고등학생이 직관적으로 이해할 수 있는 쉬운 어휘를 써라."
+                        f"지침: 이 주제에 대한 너의 철학적 생각을 2~3문장으로 진중하게 밝혀라. 고등학생이 직관적으로 이해할 수 있는 쉬운 어휘를 써라."
                     )
                     try:
                         res = client.chat.completions.create(
@@ -286,7 +258,7 @@ if st.session_state.discussion_active:
                         "time": now_time
                     })
 
-            # 난상토론 단계
+            # 난상토론 단계 (문장별 말풍선 분리)
             elif current_step < MAX_STEPS - 1:
                 selected_speakers = []
                 temp_pool = list(PHILOSOPHERS.keys())
@@ -304,23 +276,21 @@ if st.session_state.discussion_active:
                         f"{info['prompt']}\n\n"
                         f"[토론 주제] {st.session_state.current_topic}\n\n"
                         f"[대화방 흐름]\n" + ("\n".join(temp_history)) +
-                        f"\n\n지침:\n"
-                        f"1. 방금 올라온 상대의 톡에 맞춰 1~2문장으로 즉각 반박해라.\n"
-                        f"2. 단순 추임새가 아닌 너만의 철학적 관점이 담긴 새로운 생각을 덧붙여라.\n"
-                        f"3. 고등학생도 이해할 수 있도록 난이도를 낮춰 아주 쉽게 말해라."
+                        f"\n\n지침: 직전 대화에 맞춰 1~2문장으로 즉각 반박하고, 고등학생도 이해하기 쉽게 아주 쉽게 말해라."
                     )
                     try:
                         res = client.chat.completions.create(
                             model="gemini-3.5-flash-lite",
                             messages=[
                                 {"role": "system", "content": prompt_content},
-                                {"role": "user", "content": "새로운 생각으로 반박해줘."}
+                                {"role": "user", "content": "반박해줘."}
                             ],
                         )
                         text = res.choices[0].message.content.strip()
                     except Exception:
                         text = "그 방식은 문제의 본질을 잘못 짚은 것 같네요."
                     
+                    # 마침표/물음표/느낌표 기준으로 한 문장씩 말풍선 분리
                     sentences = [s.strip() for s in text.replace('!', '!|').replace('?', '?|').replace('.', '.|').split('|') if s.strip()]
                     if not sentences:
                         sentences = [text]
