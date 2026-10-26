@@ -8,7 +8,7 @@ import streamlit as st
 # 페이지 기본 설정
 st.set_page_config(page_title="🏛️ AI 철학자 아고라 카톡방", page_icon="🏛️", layout="centered")
 
-# 카카오톡 스타일 Custom CSS
+# 카카오톡 스타일 Custom CSS (말풍선 및 꼬리 정교화)
 st.markdown("""
 <style>
     .stApp {
@@ -35,7 +35,7 @@ st.markdown("""
 
     .kakao-msg-container {
         display: flex;
-        margin-bottom: 16px;
+        margin-bottom: 14px;
         align-items: flex-start;
     }
     
@@ -177,7 +177,7 @@ if st.session_state.discussion_active:
     
     st.markdown(f'<div class="kakaotalk-notice">📌 [토론 주제] {st.session_state.current_topic}</div>', unsafe_allow_html=True)
 
-    # 대화 출력 (안전한 HTML 구조화)
+    # 대화 출력
     for chat in st.session_state.messages:
         if chat["type"] == "chat":
             lines = chat["lines"]
@@ -230,7 +230,7 @@ if st.session_state.discussion_active:
                 if m['type'] == 'chat':
                     flat_history.append(f"{m['speaker']}: {' '.join(m['lines'])}")
 
-            # 1단계: 초반 입론 (한 말풍선에 묶어서 출력)
+            # 1단계: 초반 입론 (문장별로 분리하여 여러 말풍선으로 연속 출력)
             if current_step == 0:
                 for name, info in PHILOSOPHERS.items():
                     intro_prompt = (
@@ -250,11 +250,16 @@ if st.session_state.discussion_active:
                     except Exception:
                         text = "이 주제는 우리가 다 같이 고민해볼 가치가 있는 중요한 문제입니다."
                     
+                    # 입론도 문장별로 깔끔하게 쪼개서 여러 말풍선으로 출력되도록 수정
+                    sentences = [s.strip() for s in text.replace('!', '!|').replace('?', '?|').replace('.', '.|').split('|') if s.strip()]
+                    if not sentences:
+                        sentences = [text]
+
                     st.session_state.messages.append({
                         "type": "chat",
                         "speaker": name,
                         "icon": info["icon"],
-                        "lines": [text],
+                        "lines": sentences,
                         "time": now_time
                     })
 
@@ -290,7 +295,6 @@ if st.session_state.discussion_active:
                     except Exception:
                         text = "그 방식은 문제의 본질을 잘못 짚은 것 같네요."
                     
-                    # 마침표/물음표/느낌표 기준으로 한 문장씩 말풍선 분리
                     sentences = [s.strip() for s in text.replace('!', '!|').replace('?', '?|').replace('.', '.|').split('|') if s.strip()]
                     if not sentences:
                         sentences = [text]
