@@ -8,7 +8,7 @@ import streamlit as st
 # 페이지 기본 설정
 st.set_page_config(page_title="🏛️ AI 철학자 아고라 카톡방", page_icon="🏛️", layout="centered")
 
-# 카카오톡 스타일 Custom CSS
+# 카카오톡 스타일 Custom CSS (상단 고정 공지 바, 호버 버튼 효과, 스크롤 이동 포함)
 st.markdown("""
 <style>
     .stApp {
@@ -21,27 +21,61 @@ st.markdown("""
         max-width: 600px;
     }
     
+    /* 상단 고정 공지 바 컨테이너 */
+    .sticky-notice-container {
+        position: sticky;
+        top: 0;
+        z-index: 999;
+        background-color: #BACEE0;
+        padding-bottom: 10px;
+    }
+
     /* 카카오톡 상단 공지 바 스타일 */
     .kakao-notice-bar {
         background-color: #FFFFFF;
-        border-radius: 8px;
-        padding: 10px 14px;
+        border-radius: 10px;
+        padding: 12px 16px;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.15);
+        font-size: 0.95rem;
+        color: #333333;
+    }
+    .kakao-notice-top-row {
         display: flex;
         align-items: center;
         justify-content: space-between;
-        margin-bottom: 15px;
-        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-        font-size: 0.9rem;
-        color: #333333;
-        position: relative;
     }
     .kakao-notice-left {
         display: flex;
         align-items: center;
-        gap: 8px;
+        gap: 10px;
+        font-weight: 500;
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
+    }
+    
+    /* 펼쳐졌을 때 하단 버튼 영역 (마우스를 올릴 때만 버튼 모양으로 강조) */
+    .kakao-notice-buttons {
+        display: flex;
+        border-top: 1px solid #EAEAEA;
+        margin-top: 10px;
+        padding-top: 8px;
+    }
+    .kakao-notice-btn {
+        flex: 1;
+        text-align: center;
+        font-size: 0.85rem;
+        color: #555555;
+        padding: 6px;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: background-color 0.2s, color 0.2s;
+        text-decoration: none;
+    }
+    .kakao-notice-btn:hover {
+        background-color: #F0F2F5;
+        color: #000000;
+        font-weight: bold;
     }
 
     .kakaotalk-notice {
@@ -128,6 +162,9 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
+# 페이지 최상단 앵커 (글 확인하기 클릭 시 위로 이동하기 위함)
+st.markdown('<div id="top-anchor"></div>', unsafe_allow_html=True)
+
 st.title("🏛️ AI 철학자 그룹채팅")
 
 # 1. API 키 가져오기
@@ -183,6 +220,8 @@ if "step_count" not in st.session_state:
     st.session_state.step_count = 0
 if "show_notice_bar" not in st.session_state:
     st.session_state.show_notice_bar = False
+if "notice_expanded" not in st.session_state:
+    st.session_state.notice_expanded = False
 if "waiting_for_tikitaka_choice" not in st.session_state:
     st.session_state.waiting_for_tikitaka_choice = False
 
@@ -196,6 +235,7 @@ if st.button("💬 채팅방 입장 및 토론 시작"):
         st.session_state.discussion_active = True
         st.session_state.step_count = 0
         st.session_state.show_notice_bar = False
+        st.session_state.notice_expanded = False
         st.session_state.waiting_for_tikitaka_choice = False
         st.rerun()
     else:
@@ -204,26 +244,50 @@ if st.button("💬 채팅방 입장 및 토론 시작"):
 # 6. 카카오톡 대화방 화면 렌더링
 if st.session_state.discussion_active:
     
-    # 입론이 끝난 후 상단 공지 바 표시 (마우스를 올리면 우측에 닫기 버튼 노출)
+    # 📌 스크롤을 내려도 상단에 고정되는 공지 바 (사진 1, 3번 형태)
     if st.session_state.show_notice_bar:
-        col_bar1, col_bar2 = st.columns([0.92, 0.08])
-        with col_bar1:
+        arrow_icon = "▲" if st.session_state.notice_expanded else "▼"
+        
+        # Streamlit 컨테이너를 사용하여 상단 고정 효과 부여
+        st.markdown('<div class="sticky-notice-container">', unsafe_allow_html=True)
+        
+        col_n1, col_n2 = st.columns([0.92, 0.08])
+        with col_n1:
+            # 공지 바 기본 내용 HTML 구성
+            expanded_html = ""
+            if st.session_state.notice_expanded:
+                expanded_html = """
+                <div class="kakao-notice-buttons">
+                    <div class="kakao-notice-btn">다시 열지 않음</div>
+                    <div style="border-left: 1px solid #EAEAEA; height: 16px; align-self: center; margin: 0 4px;"></div>
+                    <div class="kakao-notice-btn">접어두기</div>
+                </div>
+                """
+            
             st.markdown(f"""
             <div class="kakao-notice-bar">
-                <div class="kakao-notice-left">
-                    <span>📢</span> <b>[공지]</b> {st.session_state.current_topic}
+                <div class="kakao-notice-top-row">
+                    <div class="kakao-notice-left">
+                        <span style="font-size: 1.1rem;">📢</span> 
+                        <span style="font-weight: bold; color: #111111;">{st.session_state.current_topic}</span>
+                    </div>
                 </div>
+                {expanded_html}
             </div>
             """, unsafe_allow_html=True)
-        with col_bar2:
-            if st.button("✕", key="close_notice"):
-                st.session_state.show_notice_bar = False
+            
+        with col_n2:
+            # 화살표 버튼을 누르면 펼치기/접기 토글
+            if st.button(arrow_icon, key="toggle_notice_arrow", use_container_width=True):
+                st.session_state.notice_expanded = not st.session_state.notice_expanded
                 st.rerun()
+                
+        st.markdown('</div>', unsafe_allow_html=True)
 
     st.markdown(f'<div class="kakaotalk-notice">📌 [토론 주제] {st.session_state.current_topic}</div>', unsafe_allow_html=True)
 
     # 대화 출력
-    for chat in st.session_state.messages:
+    for idx_msg, chat in enumerate(st.session_state.messages):
         if chat["type"] == "chat":
             lines = chat["lines"]
             speaker = chat["speaker"]
@@ -251,15 +315,30 @@ if st.session_state.discussion_active:
             st.markdown("</div></div>", unsafe_allow_html=True)
             
         elif chat["type"] == "notice_card":
+            # 2번 사진 형태의 공지 말풍선 (하단 '글 확인하기' 영역 포함)
             st.markdown(f"""
-            <div style="background-color: #FFFFFF; padding: 14px 18px; border-radius: 12px; margin: 10px 0 20px 52px; max-width: 320px; box-shadow: 0 1px 3px rgba(0,0,0,0.15); color: #111111;">
-                <div style="font-weight: bold; margin-bottom: 6px; font-size: 0.95rem;">공지가 등록되었습니다.</div>
-                <div style="font-size: 0.9rem; color: #333333; margin-bottom: 12px;">{st.session_state.current_topic}</div>
-                <div style="border-top: 1px solid #EAEAEA; padding-top: 8px; font-size: 0.85rem; color: #555555;">
-                    📄 이어서 티키타카(난상토론)를 더 진행하시겠습니까?
+            <div style="background-color: #FFFFFF; border-radius: 14px; margin: 10px 0 20px 52px; max-width: 320px; box-shadow: 0 1px 3px rgba(0,0,0,0.15); overflow: hidden; color: #111111;">
+                <div style="padding: 16px 18px;">
+                    <div style="font-weight: bold; margin-bottom: 8px; font-size: 0.95rem;">공지가 등록되었습니다.</div>
+                    <div style="font-size: 0.95rem; color: #222222;">{st.session_state.current_topic}</div>
                 </div>
-            </div>
             """, unsafe_allow_html=True)
+            
+            # 글 확인하기 칸 (색이 다른 부분 - 누르면 위로 스크롤 이동)
+            col_ga, col_gb = st.columns([0.9, 0.1])
+            with st.container():
+                if st.button("📋 글 확인하기  >", key=f"go_to_notice_{idx_msg}", use_container_width=True):
+                    # 자바스크립트를 이용해 페이지 최상단(top-anchor)으로 부드럽게 스크롤 이동
+                    st.markdown("""
+                        <script>
+                            const topElement = document.getElementById('top-anchor');
+                            if (topElement) {
+                                topElement.scrollIntoView({ behavior: 'smooth' });
+                            }
+                        </script>
+                    """, unsafe_allow_html=True)
+            
+            st.markdown("</div>", unsafe_allow_html=True)
             
         elif chat["type"] == "summary":
             st.markdown(f"""
@@ -337,8 +416,9 @@ if st.session_state.discussion_active:
                         "time": now_time
                     })
                 
-                # 입론이 모두 끝난 직후 공지 바와 말풍선 추가 후 대기
+                # 입론이 모두 끝난 직후 상단 공지 바와 말풍선 추가 후 대기
                 st.session_state.show_notice_bar = True
+                st.session_state.notice_expanded = False
                 st.session_state.messages.append({
                     "type": "notice_card"
                 })
@@ -453,5 +533,6 @@ if st.session_state.discussion_active:
             st.session_state.discussion_active = False
             st.session_state.step_count = 0
             st.session_state.show_notice_bar = False
+            st.session_state.notice_expanded = False
             st.session_state.waiting_for_tikitaka_choice = False
             st.rerun()
