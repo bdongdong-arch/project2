@@ -8,7 +8,7 @@ import streamlit as st
 # 페이지 기본 설정
 st.set_page_config(page_title="🏛️ AI 철학자 아고라 카톡방", page_icon="🏛️", layout="centered")
 
-# 카카오톡 스타일 Custom CSS (상단 고정 공지 바, 호버 버튼 효과, 스크롤 이동 포함)
+# 카카오톡 스타일 Custom CSS
 st.markdown("""
 <style>
     .stApp {
@@ -244,16 +244,14 @@ if st.button("💬 채팅방 입장 및 토론 시작"):
 # 6. 카카오톡 대화방 화면 렌더링
 if st.session_state.discussion_active:
     
-    # 📌 스크롤을 내려도 상단에 고정되는 공지 바 (사진 1, 3번 형태)
+    # 상단 고정 공지 바
     if st.session_state.show_notice_bar:
         arrow_icon = "▲" if st.session_state.notice_expanded else "▼"
         
-        # Streamlit 컨테이너를 사용하여 상단 고정 효과 부여
         st.markdown('<div class="sticky-notice-container">', unsafe_allow_html=True)
         
         col_n1, col_n2 = st.columns([0.92, 0.08])
         with col_n1:
-            # 공지 바 기본 내용 HTML 구성
             expanded_html = ""
             if st.session_state.notice_expanded:
                 expanded_html = """
@@ -277,7 +275,6 @@ if st.session_state.discussion_active:
             """, unsafe_allow_html=True)
             
         with col_n2:
-            # 화살표 버튼을 누르면 펼치기/접기 토글
             if st.button(arrow_icon, key="toggle_notice_arrow", use_container_width=True):
                 st.session_state.notice_expanded = not st.session_state.notice_expanded
                 st.rerun()
@@ -315,7 +312,6 @@ if st.session_state.discussion_active:
             st.markdown("</div></div>", unsafe_allow_html=True)
             
         elif chat["type"] == "notice_card":
-            # 2번 사진 형태의 공지 말풍선 (하단 '글 확인하기' 영역 포함)
             st.markdown(f"""
             <div style="background-color: #FFFFFF; border-radius: 14px; margin: 10px 0 20px 52px; max-width: 320px; box-shadow: 0 1px 3px rgba(0,0,0,0.15); overflow: hidden; color: #111111;">
                 <div style="padding: 16px 18px;">
@@ -324,11 +320,8 @@ if st.session_state.discussion_active:
                 </div>
             """, unsafe_allow_html=True)
             
-            # 글 확인하기 칸 (색이 다른 부분 - 누르면 위로 스크롤 이동)
-            col_ga, col_gb = st.columns([0.9, 0.1])
             with st.container():
                 if st.button("📋 글 확인하기  >", key=f"go_to_notice_{idx_msg}", use_container_width=True):
-                    # 자바스크립트를 이용해 페이지 최상단(top-anchor)으로 부드럽게 스크롤 이동
                     st.markdown("""
                         <script>
                             const topElement = document.getElementById('top-anchor');
@@ -347,9 +340,9 @@ if st.session_state.discussion_active:
             </div>
             """, unsafe_allow_html=True)
 
-    MAX_STEPS = 8  # 입론 1회 + 난상토론 6회 + 요약 1회
+    # 총 7번의 티키타카(입론 1회 + 난상토론 6회) 이후 공지 및 선택지 제공, 마지막은 요약
+    MAX_STEPS = 9  
     
-    # 사용자가 티키타카 진행 여부를 선택 대기 중일 때 버튼 표시
     if st.session_state.waiting_for_tikitaka_choice:
         st.write("---")
         col_b1, col_b2 = st.columns(2)
@@ -373,7 +366,7 @@ if st.session_state.discussion_active:
         elif current_step == MAX_STEPS - 1:
             spinner_msg = "📊 사회자가 대화 내용을 바탕으로 핵심 주장을 정리하는 중..."
         else:
-            spinner_msg = f"🔥 톡으로 서로를 의식하며 티키타카 수다를 떠는 중... ({current_step}/{MAX_STEPS-1})"
+            spinner_msg = f"🔥 톡으로 서로를 의식하며 티키타카 수다를 떠는 중... ({current_step}/{MAX_STEPS-2})"
 
         with st.spinner(spinner_msg):
             time.sleep(0.8)
@@ -383,7 +376,7 @@ if st.session_state.discussion_active:
                 if m['type'] == 'chat':
                     flat_history.append(f"{m['speaker']}: {' '.join(m['lines'])}")
 
-            # 1단계: 초반 입론 (처음 시작할 때는 공지 화면이 없음)
+            # 1단계: 초반 입론
             if current_step == 0:
                 for name, info in PHILOSOPHERS.items():
                     intro_content = (
@@ -394,9 +387,7 @@ if st.session_state.discussion_active:
                     try:
                         res = client.chat.completions.create(
                             model="gemini-3.5-flash-lite",
-                            messages=[
-                                {"role": "user", "content": intro_content}
-                            ],
+                            messages=[{"role": "user", "content": intro_content}],
                         )
                         text = res.choices[0].message.content.strip()
                         if not text:
@@ -416,17 +407,10 @@ if st.session_state.discussion_active:
                         "time": now_time
                     })
                 
-                # 입론이 모두 끝난 직후 상단 공지 바와 말풍선 추가 후 대기
-                st.session_state.show_notice_bar = True
-                st.session_state.notice_expanded = False
-                st.session_state.messages.append({
-                    "type": "notice_card"
-                })
-                st.session_state.waiting_for_tikitaka_choice = True
                 st.session_state.step_count += 1
                 st.rerun()
 
-            # 난상토론 단계
+            # 난상토론 단계 (총 6번 반복하여 충분한 대화 유도)
             elif current_step < MAX_STEPS - 1:
                 selected_speakers = []
                 temp_pool = list(PHILOSOPHERS.keys())
@@ -449,9 +433,7 @@ if st.session_state.discussion_active:
                     try:
                         res = client.chat.completions.create(
                             model="gemini-3.5-flash-lite",
-                            messages=[
-                                {"role": "user", "content": debate_content}
-                            ],
+                            messages=[{"role": "user", "content": debate_content}],
                         )
                         text = res.choices[0].message.content.strip()
                         if not text:
@@ -472,6 +454,19 @@ if st.session_state.discussion_active:
                     })
                     temp_history.append(f"{name}: {text}")
 
+                st.session_state.step_count += 1
+                
+                # 6번의 난상토론(총 7단계)이 끝나면 공지 바 및 말풍선 띄우기
+                if st.session_state.step_count >= 7:
+                    st.session_state.show_notice_bar = True
+                    st.session_state.notice_expanded = False
+                    st.session_state.messages.append({
+                        "type": "notice_card"
+                    })
+                    st.session_state.waiting_for_tikitaka_choice = True
+
+                st.rerun()
+
             # 사회자 최종 요약 카드 생성
             else:
                 summary_content = (
@@ -489,9 +484,7 @@ if st.session_state.discussion_active:
                 try:
                     res = client.chat.completions.create(
                         model="gemini-3.5-flash-lite",
-                        messages=[
-                            {"role": "user", "content": summary_content}
-                        ],
+                        messages=[{"role": "user", "content": summary_content}],
                     )
                     summary_text = res.choices[0].message.content.strip()
                 except Exception:
