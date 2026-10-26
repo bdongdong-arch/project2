@@ -8,7 +8,7 @@ import streamlit as st
 # 페이지 기본 설정
 st.set_page_config(page_title="🏛️ AI 철학자 아고라 카톡방", page_icon="🏛️", layout="centered")
 
-# 카카오톡 스타일 Custom CSS (상단 공지 바 및 호버 X 표시 스타일 포함)
+# 카카오톡 스타일 Custom CSS
 st.markdown("""
 <style>
     .stApp {
@@ -216,7 +216,7 @@ if st.button("💬 채팅방 입장 및 토론 시작"):
 # 6. 카카오톡 대화방 화면 렌더링
 if st.session_state.discussion_active:
     
-    # 📌 입론이 끝난 후(step_count >= 5) 상단에 2번 사진 형태의 공지 바 표시 (X를 눌러 지우기 가능)
+    # 📌 입론이 끝난 후 상단 공지 바 표시 (X를 눌러 지우기 가능)
     if st.session_state.show_notice_bar:
         col_bar1, col_bar2 = st.columns([0.92, 0.08])
         with col_bar1:
@@ -263,7 +263,6 @@ if st.session_state.discussion_active:
             st.markdown("</div></div>", unsafe_allow_html=True)
             
         elif chat["type"] == "notice_card":
-            # 1번 사진 형태의 공지 등록 말풍선 및 버튼 영역
             st.markdown(f"""
             <div style="background-color: #FFFFFF; padding: 14px 18px; border-radius: 12px; margin: 10px 0 20px 52px; max-width: 320px; box-shadow: 0 1px 3px rgba(0,0,0,0.15); color: #111111;">
                 <div style="font-weight: bold; margin-bottom: 6px; font-size: 0.95rem;">공지가 등록되었습니다.</div>
@@ -294,7 +293,7 @@ if st.session_state.discussion_active:
         with col_b2:
             if st.button("📊 바로 사회자 요약으로 넘어가기", use_container_width=True):
                 st.session_state.waiting_for_tikitaka_choice = False
-                st.session_state.step_count = MAX_STEPS - 1  # 바로 요약 단계로 점프
+                st.session_state.step_count = MAX_STEPS - 1
                 st.rerun()
 
     elif st.session_state.step_count < MAX_STEPS:
@@ -350,7 +349,7 @@ if st.session_state.discussion_active:
                         "time": now_time
                     })
                 
-                # 입론이 모두 끝난 직후 공지 바와 "공지가 등록되었습니다" 말풍선 추가 후 일시 정지
+                # 입론이 모두 끝난 직후 공지 바와 말풍선 추가 후 대기
                 st.session_state.show_notice_bar = True
                 st.session_state.messages.append({
                     "type": "notice_card"
@@ -453,4 +452,18 @@ if st.session_state.discussion_active:
 
                 st.session_state.messages.append({
                     "type": "summary",
-                    "content":
+                    "content": summary_text
+                })
+
+            st.session_state.step_count += 1
+            st.rerun()
+
+    else:
+        st.success("🎉 아고라 광장의 열띤 토론이 모두 종료되었습니다!")
+        if st.button("🔄 새로운 주제로 대화하기"):
+            st.session_state.messages = []
+            st.session_state.discussion_active = False
+            st.session_state.step_count = 0
+            st.session_state.show_notice_bar = False
+            st.session_state.waiting_for_tikitaka_choice = False
+            st.rerun()
