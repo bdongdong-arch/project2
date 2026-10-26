@@ -54,7 +54,7 @@ st.markdown("""
     }
     
     .kakao-info-col {
-        display: flex;
+        def display: flex;
         flex-direction: column;
     }
     
@@ -120,32 +120,32 @@ client = OpenAI(
     base_url="https://generativelanguage.googleapis.com/v1beta/openai/",
 )
 
-# 3. 5인 철학자 페르소나 정의 (고등학생 눈높이 + 새로운 입장/논거 제시)
+# 3. 5인 철학자 페르소나 정의 (고등학생 눈높이 + 상호 반박 집중)
 PHILOSOPHERS = {
     "니체": {
         "icon": "⚡",
         "description": "기존 도덕을 깨부수고 스스로 가치를 만들라는 사상가",
-        "prompt": "너는 프레드리히 니체다. 고등학생도 이해하기 쉽게 쉬운 단어로, 기존의 뻔한 틀을 깨고 스스로 주인이 되라는 너만의 새로운 논거와 주장을 1~2문장으로 선언해라. 반드시 순수 한국어로만 답해라."
+        "prompt": "너는 프레드리히 니체다. 고등학생도 이해하기 쉽게 쉬운 단어로, 직전 대화에서 나온 상대의 주장을 예리하게 꼬집으며 '네 생각은 기존의 뻔한 틀에 갇혀 있다'고 반박하는 내용을 1~2문장으로 말해라. 반드시 순수 한국어로만 답해라."
     },
     "소크라테스": {
         "icon": "🦉",
         "description": "질문을 통해 자신의 무지를 깨닫게 하는 철학자",
-        "prompt": "너는 소크라테스다. 고등학생도 이해하기 쉽게 쉬운 단어로, 우리가 제대로 알고 있는지 스스로 돌아보게 만드는 새로운 질문과 생각을 1~2문장으로 던져라. 반드시 순수 한국어로만 답해라."
+        "prompt": "너는 소크라테스다. 고등학생도 이해하기 쉽게 쉬운 단어로, 직전 상대의 주장이 가진 모순이나 허점을 파고드는 날카로운 반문이나 질문을 1~2문장으로 던져라. 반드시 순수 한국어로만 답해라."
     },
     "장자": {
         "icon": "🦋",
         "description": "자연의 흐름에 맡기고 억지로 하지 말라는 도인",
-        "prompt": "너는 장자다. 고등학생도 이해하기 쉽게 쉬운 단어로, 억지로 얽매이지 말고 자연스럽게 흘러가자는 새로운 대안을 1~2문장으로 재치 있게 말해라. 반드시 순수 한국어로만 답해라."
+        "prompt": "너는 장자다. 고등학생도 이해하기 쉽게 쉬운 단어로, 직전 상대가 세우는 억지스러운 기준이나 주장을 비웃으며 자연스럽게 흘러가야 한다는 대안을 1~2문장으로 재치 있게 받아쳐라. 반드시 순수 한국어로만 답해라."
     },
     "칸트": {
         "icon": "🕰️",
         "description": "누구나 지켜야 할 보편적인 도덕 원칙을 강조하는 원칙주의자",
-        "prompt": "너는 이마누엘 칸트다. 고등학생도 쉽게, 누구에게나 적용되는 보편적인 도덕 원칙과 의무에 근거한 확고하고 새로운 주장을 1~2문장으로 단호하게 말해라. 반드시 순수 한국어로만 답해라."
+        "prompt": "너는 이마누엘 칸트다. 고등학생도 쉽게, 직전 상대의 주장이 보편적인 도덕 원칙과 의무를 저버린 무책임한 생각이라고 단호하게 반박하는 내용을 1~2문장으로 말해라. 반드시 순수 한국어로만 답해라."
     },
     "홉스": {
         "icon": "🦁",
         "description": "인간의 이기심을 막기 위해 강력한 법과 질서가 필요하다는 현실주의자",
-        "prompt": "너는 토마스 홉스다. 고등학생 수준에 맞춰, 인간의 이기심을 통제할 강력한 질서가 왜 필요한지 새로운 현실적 논거를 1~2문장으로 짚어라. 반드시 순수 한국어로만 답해라."
+        "prompt": "너는 토마스 홉스다. 고등학생 수준에 맞춰, 직전 상대의 주장이 현실을 모르는 나이브한 공상이라 깎아내리며 강력한 통제와 질서가 왜 필수적인지 1~2문장으로 팩트를 짚어 반박해라. 반드시 순수 한국어로만 답해라."
     }
 }
 
@@ -224,7 +224,7 @@ if st.session_state.discussion_active:
         elif current_step == MAX_STEPS - 1:
             spinner_msg = "📊 사회자가 고등학생도 쉽게 알 수 있게 핵심 주장을 정리하는 중..."
         else:
-            spinner_msg = f"🔥 톡으로 티키타카 수다를 떠는 중... ({current_step}/{MAX_STEPS-1})"
+            spinner_msg = f"🔥 톡으로 서로를 의식하며 티키타카 수다를 떠는 중... ({current_step}/{MAX_STEPS-1})"
 
         with st.spinner(spinner_msg):
             time.sleep(0.8)
@@ -268,7 +268,7 @@ if st.session_state.discussion_active:
                         "time": now_time
                     })
 
-            # 난상토론 단계
+            # 난상토론 단계 (직전 대화와 상대방의 논리를 직접 반박)
             elif current_step < MAX_STEPS - 1:
                 selected_speakers = []
                 temp_pool = list(PHILOSOPHERS.keys())
@@ -285,15 +285,15 @@ if st.session_state.discussion_active:
                     prompt_content = (
                         f"{info['prompt']}\n\n"
                         f"[토론 주제] {st.session_state.current_topic}\n\n"
-                        f"[대화방 흐름]\n" + ("\n".join(temp_history)) +
-                        f"\n\n지침: 직전 대화에 얽매이지 말고, 이 주제를 향한 너의 새로운 주장이나 날카로운 논거를 1~2문장으로 새롭게 꺼내어 말해라."
+                        f"[지금까지의 대화 흐름]\n" + ("\n".join(temp_history)) +
+                        f"\n\n지침: 직전에 오간 대화 내용을 반드시 의식하고, 바로 직전에 발언한 내용이나 상대방의 논리를 구체적으로 지목하며 1~2문장으로 날카롭게 반박해라."
                     )
                     try:
                         res = client.chat.completions.create(
                             model="gemini-3.5-flash-lite",
                             messages=[
                                 {"role": "system", "content": prompt_content},
-                                {"role": "user", "content": "새로운 주장을 펼쳐줘."}
+                                {"role": "user", "content": "상대의 말을 반박해줘."}
                             ],
                         )
                         text = res.choices[0].message.content.strip()
