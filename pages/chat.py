@@ -185,7 +185,6 @@ if st.session_state.discussion_active:
             icon = chat["icon"]
             time_str = chat["time"]
             
-            # Streamlit 네이티브 컴포넌트와 깔끔한 HTML 블록 조합으로 태그 노출 원천 차단
             st.markdown(f"""
             <div class="kakao-msg-row">
                 <div class="kakao-avatar">{icon}</div>
@@ -283,4 +282,46 @@ if st.session_state.discussion_active:
                     info = PHILOSOPHERS[name]
                     prompt_content = (
                         f"{info['prompt']}\n\n"
-                        f
+                        f"[토론 주제] {st.session_state.current_topic}\n\n"
+                        f"[대화방 흐름]\n" + ("\n".join(temp_history)) +
+                        f"\n\n지침: 직전 대화에 맞춰 1~2문장으로 즉각 반박하고, 고등학생도 이해하기 쉽게 아주 쉽게 말해라."
+                    )
+                    try:
+                        res = client.chat.completions.create(
+                            model="gemini-3.5-flash-lite",
+                            messages=[
+                                {"role": "system", "content": prompt_content},
+                                {"role": "user", "content": "반박해줘."}
+                            ],
+                        )
+                        text = res.choices[0].message.content.strip()
+                    except Exception:
+                        text = "그 방식은 문제의 본질을 잘못 짚은 것 같네요."
+                    
+                    sentences = [s.strip() for s in text.replace('!', '!|').replace('?', '?|').replace('.', '.|').split('|') if s.strip()]
+                    if not sentences:
+                        sentences = [text]
+
+                    st.session_state.messages.append({
+                        "type": "chat",
+                        "speaker": name,
+                        "icon": info["icon"],
+                        "lines": sentences,
+                        "time": now_time
+                    })
+                    temp_history.append(f"{name}: {text}")
+
+            # 사회자 최종 요약 카드 생성
+            else:
+                summary_prompt = (
+                    f"토론 주제: {st.session_state.current_topic}\n"
+                    f"대화 내용:\n" + "\n".join(flat_history) + "\n\n"
+                    f"지침: 지금까지 오간 대화 내용을 바탕으로, 사회자로서 이번 주제('{st.session_state.current_topic}')에 대해 각 철학자가 어떤 주장을 펼쳤는지 정리해 줘.\n"
+                    f"고등학생이 읽고 한눈에 이해할 수 있도록 쉽고 명확한 어휘로 정리해야 해.\n"
+                    "반드시 아래 마크다운 형식으로만 작성할 것:\n"
+                    f"### 📊 [사회자] '{st.session_state.current_topic}'에 대한 철학자별 핵심 주장\n"
+                    "- **⚡ 니체**: (고등학생 눈높이의 핵심 주장 1문장)\n"
+                    "- **🦉 소크라테스**: (고등학생 눈높이의 핵심 주장 1문장)\n"
+                    "- **🦋 장자**: (고등학생 눈높이의 핵심 주장 1문장)\n"
+                    "- **🕰️ 칸트**: (고등학생 눈높이의 핵심 주장 1문장)\n"
+                    "- **🦁 홉스**: (고등
