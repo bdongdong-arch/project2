@@ -54,7 +54,7 @@ st.markdown("""
     }
     
     .kakao-info-col {
-        def display: flex;
+        display: flex;
         flex-direction: column;
     }
     
@@ -222,7 +222,7 @@ if st.session_state.discussion_active:
         if current_step == 0:
             spinner_msg = "🏛️ 철학자들이 입장해 첫 생각을 진중하게 발표하는 중..."
         elif current_step == MAX_STEPS - 1:
-            spinner_msg = "📊 사회자가 고등학생도 쉽게 알 수 있게 핵심 주장을 정리하는 중..."
+            spinner_msg = "📊 사회자가 대화 내용을 바탕으로 핵심 주장을 정리하는 중..."
         else:
             spinner_msg = f"🔥 톡으로 서로를 의식하며 티키타카 수다를 떠는 중... ({current_step}/{MAX_STEPS-1})"
 
@@ -268,96 +268,11 @@ if st.session_state.discussion_active:
                         "time": now_time
                     })
 
-            # 난상토론 단계 (직전 대화와 상대방의 논리를 직접 반박)
+            # 난상토론 단계
             elif current_step < MAX_STEPS - 1:
                 selected_speakers = []
                 temp_pool = list(PHILOSOPHERS.keys())
                 random.shuffle(temp_pool)
                 for s in temp_pool:
                     if s not in selected_speakers:
-                        selected_speakers.append(s)
-                    if len(selected_speakers) >= 3:
-                        break
-
-                temp_history = list(flat_history)
-                for name in selected_speakers:
-                    info = PHILOSOPHERS[name]
-                    prompt_content = (
-                        f"{info['prompt']}\n\n"
-                        f"[토론 주제] {st.session_state.current_topic}\n\n"
-                        f"[지금까지의 대화 흐름]\n" + ("\n".join(temp_history)) +
-                        f"\n\n지침: 직전에 오간 대화 내용을 반드시 의식하고, 바로 직전에 발언한 내용이나 상대방의 논리를 구체적으로 지목하며 1~2문장으로 날카롭게 반박해라."
-                    )
-                    try:
-                        res = client.chat.completions.create(
-                            model="gemini-3.5-flash-lite",
-                            messages=[
-                                {"role": "system", "content": prompt_content},
-                                {"role": "user", "content": "상대의 말을 반박해줘."}
-                            ],
-                        )
-                        text = res.choices[0].message.content.strip()
-                        if not text:
-                            continue
-                    except Exception:
-                        continue
-                    
-                    sentences = [s.strip() for s in text.replace('!', '!|').replace('?', '?|').replace('.', '.|').split('|') if s.strip()]
-                    if not sentences:
-                        continue
-
-                    st.session_state.messages.append({
-                        "type": "chat",
-                        "speaker": name,
-                        "icon": info["icon"],
-                        "lines": sentences,
-                        "time": now_time
-                    })
-                    temp_history.append(f"{name}: {text}")
-
-            # 사회자 최종 요약 카드 생성
-            else:
-                summary_prompt = (
-                    f"토론 주제: {st.session_state.current_topic}\n"
-                    f"대화 내용:\n" + "\n".join(flat_history) + "\n\n"
-                    f"지침: 지금까지 오간 대화 내용을 바탕으로, 사회자로서 이번 주제('{st.session_state.current_topic}')에 대해 각 철학자가 어떤 주장을 펼쳤는지 정리해 줘.\n"
-                    f"고등학생이 읽고 한눈에 이해할 수 있도록 쉽고 명확한 어휘로 정리해야 해.\n"
-                    "반드시 아래 마크다운 형식으로만 작성할 것:\n"
-                    f"### 📊 [사회자] '{st.session_state.current_topic}'에 대한 철학자별 핵심 주장\n"
-                    "- **⚡ 니체**: (고등학생 눈높이의 핵심 주장 1문장)\n"
-                    "- **🦉 소크라테스**: (고등학생 눈높이의 핵심 주장 1문장)\n"
-                    "- **🦋 장자**: (고등학생 눈높이의 핵심 주장 1문장)\n"
-                    "- **🕰️ 칸트**: (고등학생 눈높이의 핵심 주장 1문장)\n"
-                    "- **🦁 홉스**: (고등학생 눈높이의 핵심 주장 1문장)"
-                )
-                try:
-                    res = client.chat.completions.create(
-                        model="gemini-3.5-flash-lite",
-                        messages=[{"role": "system", "content": summary_prompt}],
-                    )
-                    summary_text = res.choices[0].message.content.strip()
-                except Exception:
-                    summary_text = (
-                        f"### 📊 [사회자] '{st.session_state.current_topic}'에 대한 철학자별 핵심 주장\n"
-                        "- **⚡ 니체**: 기존 도덕에 얽매이지 말고 스스로 삶의 주인이 되어 가치를 만들어야 한다.\n"
-                        "- **🦉 소크라테스**: 내가 잘 모른다는 사실을 깨닫고 질문을 통해 진리를 찾아가야 한다.\n"
-                        "- **🦋 장자**: 세속적 기준에 얽매이지 말고 자연스러운 흐름(무위자연)에 맡겨야 한다.\n"
-                        "- **🕰️ 칸트**: 누구에게나 예외 없이 적용되는 보편적인 도덕 원칙을 따라야 한다.\n"
-                        "- **🦁 홉스**: 인간의 이기심으로 인한 혼란을 막으려면 강력한 법과 통제가 필요하다."
-                    )
-
-                st.session_state.messages.append({
-                    "type": "summary",
-                    "content": summary_text
-                })
-
-            st.session_state.step_count += 1
-            st.rerun()
-
-    else:
-        st.success("🎉 아고라 광장의 열띤 토론이 모두 종료되었습니다!")
-        if st.button("🔄 새로운 주제로 대화하기"):
-            st.session_state.messages = []
-            st.session_state.discussion_active = False
-            st.session_state.step_count = 0
-            st.rerun()
+                        selected_speakers.append(
