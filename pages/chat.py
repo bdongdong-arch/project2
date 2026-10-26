@@ -324,4 +324,36 @@ if st.session_state.discussion_active:
                     "- **🦉 소크라테스**: (고등학생 눈높이의 핵심 주장 1문장)\n"
                     "- **🦋 장자**: (고등학생 눈높이의 핵심 주장 1문장)\n"
                     "- **🕰️ 칸트**: (고등학생 눈높이의 핵심 주장 1문장)\n"
-                    "- **🦁 홉스**: (고등
+                    "- **🦁 홉스**: (고등학생 눈높이의 핵심 주장 1문장)"
+                )
+                try:
+                    res = client.chat.completions.create(
+                        model="gemini-3.5-flash-lite",
+                        messages=[{"role": "system", "content": summary_prompt}],
+                    )
+                    summary_text = res.choices[0].message.content.strip()
+                except Exception:
+                    summary_text = (
+                        f"### 📊 [사회자] '{st.session_state.current_topic}'에 대한 철학자별 핵심 주장\n"
+                        "- **⚡ 니체**: 기존 도덕에 얽매이지 말고 스스로 삶의 주인이 되어 가치를 만들어야 한다.\n"
+                        "- **🦉 소크라테스**: 내가 잘 모른다는 사실을 깨닫고 질문을 통해 진리를 찾아가야 한다.\n"
+                        "- **🦋 장자**: 세속적 기준에 얽매이지 말고 자연스러운 흐름(무위자연)에 맡겨야 한다.\n"
+                        "- **🕰️ 칸트**: 누구에게나 예외 없이 적용되는 보편적인 도덕 원칙을 따라야 한다.\n"
+                        "- **🦁 홉스**: 인간의 이기심으로 인한 혼란을 막으려면 강력한 법과 통제가 필요하다."
+                    )
+
+                st.session_state.messages.append({
+                    "type": "summary",
+                    "content": summary_text
+                })
+
+            st.session_state.step_count += 1
+            st.rerun()
+
+    else:
+        st.success("🎉 아고라 광장의 열띤 토론이 모두 종료되었습니다!")
+        if st.button("🔄 새로운 주제로 대화하기"):
+            st.session_state.messages = []
+            st.session_state.discussion_active = False
+            st.session_state.step_count = 0
+            st.rerun()
