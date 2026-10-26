@@ -43,18 +43,6 @@ st.markdown("""
         text-overflow: ellipsis;
         white-space: nowrap;
     }
-    /* 호버 시 나타나는 삭제(X) 버튼 스타일 */
-    .kakao-notice-close {
-        display: none;
-        cursor: pointer;
-        font-weight: bold;
-        color: #888888;
-        font-size: 1rem;
-        padding: 0 4px;
-    }
-    .kakao-notice-bar:hover .kakao-notice-close {
-        display: block;
-    }
 
     .kakaotalk-notice {
         background-color: rgba(0, 0, 0, 0.15);
@@ -216,7 +204,7 @@ if st.button("💬 채팅방 입장 및 토론 시작"):
 # 6. 카카오톡 대화방 화면 렌더링
 if st.session_state.discussion_active:
     
-    # 📌 입론이 끝난 후 상단 공지 바 표시 (X를 눌러 지우기 가능)
+    # 입론이 끝난 후 상단 공지 바 표시 (마우스를 올리면 우측에 닫기 버튼 노출)
     if st.session_state.show_notice_bar:
         col_bar1, col_bar2 = st.columns([0.92, 0.08])
         with col_bar1:
@@ -268,7 +256,7 @@ if st.session_state.discussion_active:
                 <div style="font-weight: bold; margin-bottom: 6px; font-size: 0.95rem;">공지가 등록되었습니다.</div>
                 <div style="font-size: 0.9rem; color: #333333; margin-bottom: 12px;">{st.session_state.current_topic}</div>
                 <div style="border-top: 1px solid #EAEAEA; padding-top: 8px; font-size: 0.85rem; color: #555555;">
-                    📄 이어서 티키타카(난상토론)를 진행하시겠습니까?
+                    📄 이어서 티키타카(난상토론)를 더 진행하시겠습니까?
                 </div>
             </div>
             """, unsafe_allow_html=True)
@@ -287,7 +275,7 @@ if st.session_state.discussion_active:
         st.write("---")
         col_b1, col_b2 = st.columns(2)
         with col_b1:
-            if st.button("🚀 이어서 티키타카 진행하기", use_container_width=True):
+            if st.button("🚀 이어서 티키타카 더 듣기", use_container_width=True):
                 st.session_state.waiting_for_tikitaka_choice = False
                 st.rerun()
         with col_b2:
