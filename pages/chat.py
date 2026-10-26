@@ -118,15 +118,15 @@ client = OpenAI(
     base_url="https://generativelanguage.googleapis.com/v1beta/openai/",
 )
 
-# 3. 5인 철학자 페르소나 정의 (반박 시 새로운 입장/논거 제시 유도)
+# 3. 5인 철학자 페르소나 정의
 PHILOSOPHERS = {
     "니체": {
         "icon": "⚡",
         "description": "기존 도덕을 해체하고 스스로 가치를 창조하라는 사상가",
         "prompt": (
             "너는 프레드리히 니체다.\n"
-            "- 토론 중에는 단순한 추임새("소리"나 "아니야")를 쓰지 말고, 상대의 말을 반박하면서 **주제에 대한 너만의 새로운 관점이나 날카로운 논거**를 1~2문장으로 툭 던져라.\n"
-            "- 반드시 순수 한국어로만 답해라."
+            "토론 중에는 단순한 추임새를 쓰지 말고, 상대의 말을 반박하면서 주제에 대한 너만의 새로운 관점이나 날카로운 논거를 1~2문장으로 툭 던져라.\n"
+            "반드시 순수 한국어로만 답해라."
         )
     },
     "소크라테스": {
@@ -134,8 +134,8 @@ PHILOSOPHERS = {
         "description": "무지의 자각을 이끌고 진리를 탐구하는 소탈한 철학자",
         "prompt": (
             "너는 소크라테스다.\n"
-            "- 토론 중에는 단순한 추임새 대신, 상대의 허를 찌르는 반문을 던지며 **주제를 새로운 각도로 바라보게 만드는 새로운 생각**을 1~2문장으로 꺼내라.\n"
-            "- 반드시 순수 한국어로만 답해라."
+            "토론 중에는 단순한 추임새 대신, 상대의 허를 찌르는 반문을 던지며 주제를 새로운 각도로 바라보게 만드는 새로운 생각을 1~2문장으로 꺼내라.\n"
+            "반드시 순수 한국어로만 답해라."
         )
     },
     "장자": {
@@ -143,8 +143,8 @@ PHILOSOPHERS = {
         "description": "무위자연과 물아일체로 세속의 굴레를 가볍게 비워주는 도인",
         "prompt": (
             "너는 장자(莊子)다.\n"
-            "- 토론 중에는 단순한 추임새 대신, 세속적인 집착을 비웃으며 **주제를 완전히 다른 차원에서 바라보는 새로운 대안**을 1~2문장으로 가볍게 농담처럼 던져라.\n"
-            "- 반드시 순수 한국어로만 답해라."
+            "토론 중에는 단순한 추임새 대신, 세속적인 집착을 비웃으며 주제를 완전히 다른 차원에서 바라보는 새로운 대안을 1~2문장으로 가볍게 농담처럼 던져라.\n"
+            "반드시 순수 한국어로만 답해라."
         )
     },
     "칸트": {
@@ -152,8 +152,8 @@ PHILOSOPHERS = {
         "description": "보편적 도덕 법칙과 정언명령을 강조하는 원칙주의자",
         "prompt": (
             "너는 이마누엘 칸트다.\n"
-            "- 토론 중에는 단순한 추임새 대신, 상대의 궤변을 지적하며 **이성과 보편적 의무에 기반한 새로운 원칙**을 1~2문장으로 단호하게 제시해라.\n"
-            "- 반드시 순수 한국어로만 답해라."
+            "토론 중에는 단순한 추임새 대신, 상대의 궤변을 지적하며 이성과 보편적 의무에 기반한 새로운 원칙을 1~2문장으로 단호하게 제시해라.\n"
+            "반드시 순수 한국어로만 답해라."
         )
     },
     "홉스": {
@@ -161,8 +161,8 @@ PHILOSOPHERS = {
         "description": "만인의 만인에 대한 투쟁과 강력한 국가를 주장하는 현실주의자",
         "prompt": (
             "너는 토마스 홉스다.\n"
-            "- 토론 중에는 단순한 추임새 대신, 나이브한 주장을 깎아내리며 **인간 본성과 현실 질서에 입각한 새로운 주장**을 1~2문장으로 차갑게 꽂아라.\n"
-            "- 반드시 순수 한국어로만 답해라."
+            "토론 중에는 단순한 추임새 대신, 나이브한 주장을 깎아내리며 인간 본성과 현실 질서에 입각한 새로운 주장을 1~2문장으로 차갑게 꽂아라.\n"
+            "반드시 순수 한국어로만 답해라."
         )
     }
 }
@@ -227,4 +227,43 @@ if st.session_state.discussion_active:
         if current_step == 0:
             spinner_msg = "🏛️ 철학자들이 입장해 진중한 첫 입론을 펼치는 중..."
         elif current_step == MAX_STEPS - 1:
-            spinner_msg = "📊 사회자가 주제에 대한 각 철학자의 핵심 주장을
+            spinner_msg = "📊 사회자가 주제에 대한 각 철학자의 핵심 주장을 정리하는 중..."
+        else:
+            spinner_msg = f"🔥 톡으로 티키타카 수다를 떠는 중... ({current_step}/{MAX_STEPS-1})"
+
+        with st.spinner(spinner_msg):
+            time.sleep(1.0)
+            
+            history_context = [f"{m['speaker']}: {m['content']}" for m in st.session_state.messages if m['type'] == 'chat']
+            
+            # 1단계: 초반 입론 (3~4문장)
+            if current_step == 0:
+                for name, info in PHILOSOPHERS.items():
+                    intro_prompt = (
+                        f"{info['prompt']}\n\n"
+                        f"[토론 주제] {st.session_state.current_topic}\n\n"
+                        f"지침: 채팅방에 엄숙하게 입장하여, 이 주제에 대한 자신의 첫 생각을 깊이 있고 진중한 사상을 담아 3~4문장으로 길게 발표해라."
+                    )
+                    try:
+                        res = client.chat.completions.create(
+                            model="gemini-3.5-flash-lite",
+                            messages=[
+                                {"role": "system", "content": intro_prompt},
+                                {"role": "user", "content": "진중한 첫 입론을 시작해줘."}
+                            ],
+                        )
+                        text = res.choices[0].message.content.strip()
+                    except Exception:
+                        text = "이 주제는 우리에게 깊은 사색을 요구합니다. 신중하게 접근해야 합니다."
+                    
+                    st.session_state.messages.append({
+                        "type": "chat",
+                        "speaker": name,
+                        "icon": info["icon"],
+                        "content": text,
+                        "time": now_time
+                    })
+
+            # 난상토론 단계 (상대방을 반박하며 새로운 입장을 1~2문장으로 제시)
+            elif current_step < MAX_STEPS - 1:
+                selected
