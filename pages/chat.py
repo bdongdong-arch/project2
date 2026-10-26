@@ -313,7 +313,7 @@ if st.session_state.discussion_active:
                     })
                     temp_history.append(f"{name}: {text}")
 
-            # 사회자 최종 요약 카드 생성 (API 실패 시 주제에 맞춘 철학자별 관점 신규 생성)
+            # 사회자 최종 요약 카드 생성 (API 실패 시 철학자별 관점 신규 생성)
             else:
                 summary_content = (
                     f"토론 주제: {st.session_state.current_topic}\n"
@@ -336,8 +336,41 @@ if st.session_state.discussion_active:
                     )
                     summary_text = res.choices[0].message.content.strip()
                 except Exception:
-                    # API 실패 시, 고정 문구 대신 주제('{st.session_state.current_topic}')에 맞는 관점을 새로 유추하여 사회자 브리핑 형식으로 생성
                     try:
                         fallback_prompt = (
                             f"토론 주제: {st.session_state.current_topic}\n"
-                            f"지침: 통신 오류로 전체 대화 기록을 불러오지 못했습니다. 사회자로서 이번 주제('{st.session_state.current_topic}')에 대해 니체, 소크라테스, 장자, 칸트, 홉스가 각각 어떤 고유한 관점과 주장을 펼쳤
+                            f"지침: 사회자로서 이번 주제('{st.session_state.current_topic}')에 대해 니체, 소크라테스, 장자, 칸트, 홉스가 각각 어떤 고유한 관점과 주장을 펼칠지 고등학생 눈높이에 맞춰 마크다운 형식으로 새로 작성해 주세요.\n"
+                            "반드시 아래 형식으로만 작성할 것:\n"
+                            f"### 📊 [사회자] '{st.session_state.current_topic}'에 대한 철학자별 핵심 주장\n"
+                            "- **⚡ 니체**: (주제에 맞는 니체 관점 1문장)\n"
+                            "- **🦉 소크라테스**: (주제에 맞는 소크라테스 관점 1문장)\n"
+                            "- **🦋 장자**: (주제에 맞는 장자 관점 1문장)\n"
+                            "- **🕰️ 칸트**: (주제에 맞는 칸트 관점 1문장)\n"
+                            "- **🦁 홉스**: (주제에 맞는 홉스 관점 1문장)"
+                        )
+                        fb_res = client.chat.completions.create(
+                            model="gemini-3.5-flash-lite",
+                            messages=[{"role": "user", "content": fallback_prompt}],
+                        )
+                        summary_text = fb_res.choices[0].message.content.strip()
+                    except Exception:
+                        summary_text = (
+                            f"### 📊 [사회자] '{st.session_state.current_topic}'에 대한 종합 브리핑\n"
+                            f"이번 주제인 '{st.session_state.current_topic}'에 대해 각 철학자들은 기존의 틀을 깨는 자율성(니체), 본질을 묻는 비판적 사고(소크라테스), 억지스러움을 버리는 자연스러움(장자), 보편적 의무(칸트), 그리고 사회적 질서와 통제(홉스)의 관점에서 깊이 있는 성찰을 나누어 주었습니다."
+                        )
+
+                st.session_state.messages.append({
+                    "type": "summary",
+                    "content": summary_text
+                })
+
+            st.session_state.step_count += 1
+            st.rerun()
+
+    else:
+        st.success("🎉 아고라 광장의 열띤 토론이 모두 종료되었습니다!")
+        if st.button("🔄 새로운 주제로 대화하기"):
+            st.session_state.messages = []
+            st.session_state.discussion_active = False
+            st.session_state.step_count = 0
+            st.rerun()
