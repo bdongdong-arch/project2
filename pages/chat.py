@@ -123,47 +123,27 @@ PHILOSOPHERS = {
     "니체": {
         "icon": "⚡",
         "description": "기존 도덕을 해체하고 스스로 가치를 창조하라는 사상가",
-        "prompt": (
-            "너는 프레드리히 니체다.\n"
-            "토론 중에는 단순한 추임새를 쓰지 말고, 상대의 말을 반박하면서 주제에 대한 너만의 새로운 관점이나 날카로운 논거를 1~2문장으로 툭 던져라.\n"
-            "반드시 순수 한국어로만 답해라."
-        )
+        "prompt": "너는 프레드리히 니체다. 기존 도덕의 위선을 찌르며 너만의 새로운 관점이나 날카로운 논거를 1~2문장으로 짧고 강렬하게 던져라. 반드시 순수 한국어로만 답해라."
     },
     "소크라테스": {
         "icon": "🦉",
         "description": "무지의 자각을 이끌고 진리를 탐구하는 소탈한 철학자",
-        "prompt": (
-            "너는 소크라테스다.\n"
-            "토론 중에는 단순한 추임새 대신, 상대의 허를 찌르는 반문을 던지며 주제를 새로운 각도로 바라보게 만드는 새로운 생각을 1~2문장으로 꺼내라.\n"
-            "반드시 순수 한국어로만 답해라."
-        )
+        "prompt": "너는 소크라테스다. 상대의 허를 찌르는 반문을 던지며 주제를 새로운 각도로 보게 만드는 생각을 1~2문장으로 꺼내라. 반드시 순수 한국어로만 답해라."
     },
     "장자": {
         "icon": "🦋",
         "description": "무위자연과 물아일체로 세속의 굴레를 가볍게 비워주는 도인",
-        "prompt": (
-            "너는 장자(莊子)다.\n"
-            "토론 중에는 단순한 추임새 대신, 세속적인 집착을 비웃으며 주제를 완전히 다른 차원에서 바라보는 새로운 대안을 1~2문장으로 가볍게 농담처럼 던져라.\n"
-            "반드시 순수 한국어로만 답해라."
-        )
+        "prompt": "너는 장자다. 세속적 집착을 비웃으며 주제를 완전히 다른 차원에서 바라보는 대안을 1~2문장으로 가볍고 재치 있게 던져라. 반드시 순수 한국어로만 답해라."
     },
     "칸트": {
         "icon": "🕰️",
         "description": "보편적 도덕 법칙과 정언명령을 강조하는 원칙주의자",
-        "prompt": (
-            "너는 이마누엘 칸트다.\n"
-            "토론 중에는 단순한 추임새 대신, 상대의 궤변을 지적하며 이성과 보편적 의무에 기반한 새로운 원칙을 1~2문장으로 단호하게 제시해라.\n"
-            "반드시 순수 한국어로만 답해라."
-        )
+        "prompt": "너는 이마누엘 칸트다. 상대의 궤변을 지적하며 이성과 보편적 의무에 기반한 원칙을 1~2문장으로 단호하게 제시해라. 반드시 순수 한국어로만 답해라."
     },
     "홉스": {
         "icon": "🦁",
         "description": "만인의 만인에 대한 투쟁과 강력한 국가를 주장하는 현실주의자",
-        "prompt": (
-            "너는 토마스 홉스다.\n"
-            "토론 중에는 단순한 추임새 대신, 나이브한 주장을 깎아내리며 인간 본성과 현실 질서에 입각한 새로운 주장을 1~2문장으로 차갑게 꽂아라.\n"
-            "반드시 순수 한국어로만 답해라."
-        )
+        "prompt": "너는 토마스 홉스다. 나이브한 주장을 깎아내리며 인간 본성과 현실 질서에 입각한 주장을 1~2문장으로 차갑게 꽂아라. 반드시 순수 한국어로만 답해라."
     }
 }
 
@@ -232,7 +212,7 @@ if st.session_state.discussion_active:
             spinner_msg = f"🔥 톡으로 티키타카 수다를 떠는 중... ({current_step}/{MAX_STEPS-1})"
 
         with st.spinner(spinner_msg):
-            time.sleep(1.0)
+            time.sleep(0.8)
             
             history_context = [f"{m['speaker']}: {m['content']}" for m in st.session_state.messages if m['type'] == 'chat']
             
@@ -242,7 +222,7 @@ if st.session_state.discussion_active:
                     intro_prompt = (
                         f"{info['prompt']}\n\n"
                         f"[토론 주제] {st.session_state.current_topic}\n\n"
-                        f"지침: 채팅방에 엄숙하게 입장하여, 이 주제에 대한 자신의 첫 생각을 깊이 있고 진중한 사상을 담아 3~4문장으로 길게 발표해라."
+                        f"지침: 채팅방에 입장하여 이 주제에 대한 자신의 첫 생각을 깊이 있고 진중한 사상을 담아 3~4문장으로 길게 발표해라."
                     )
                     try:
                         res = client.chat.completions.create(
@@ -253,8 +233,8 @@ if st.session_state.discussion_active:
                             ],
                         )
                         text = res.choices[0].message.content.strip()
-                    except Exception:
-                        text = "이 주제는 우리에게 깊은 사색을 요구합니다. 신중하게 접근해야 합니다."
+                    except Exception as e:
+                        text = f"이 주제는 우리에게 깊은 사색을 요구합니다. (시스템 에러: {e})"
                     
                     st.session_state.messages.append({
                         "type": "chat",
@@ -264,6 +244,90 @@ if st.session_state.discussion_active:
                         "time": now_time
                     })
 
-            # 난상토론 단계 (상대방을 반박하며 새로운 입장을 1~2문장으로 제시)
+            # 난상토론 단계
             elif current_step < MAX_STEPS - 1:
-                selected
+                selected_speakers = []
+                temp_pool = list(PHILOSOPHERS.keys())
+                random.shuffle(temp_pool)
+                for s in temp_pool:
+                    if s not in selected_speakers:
+                        selected_speakers.append(s)
+                    if len(selected_speakers) >= 3:
+                        break
+
+                temp_history = list(history_context)
+                for name in selected_speakers:
+                    info = PHILOSOPHERS[name]
+                    prompt_content = (
+                        f"{info['prompt']}\n\n"
+                        f"[토론 주제] {st.session_state.current_topic}\n\n"
+                        f"[대화방 흐름]\n" + ("\n".join(temp_history)) +
+                        f"\n\n지침: 직전 대화의 논점을 짚어 반박하며 새로운 생각이나 논거를 1~2문장으로 짧고 강렬하게 추가해라."
+                    )
+                    try:
+                        res = client.chat.completions.create(
+                            model="gemini-3.5-flash-lite",
+                            messages=[
+                                {"role": "system", "content": prompt_content},
+                                {"role": "user", "content": "반박해줘."}
+                            ],
+                        )
+                        text = res.choices[0].message.content.strip()
+                    except Exception:
+                        text = "그 방식은 본질을 놓치고 있는 게 아닐까 싶군."
+                    
+                    st.session_state.messages.append({
+                        "type": "chat",
+                        "speaker": name,
+                        "icon": info["icon"],
+                        "content": text,
+                        "time": now_time
+                    })
+                    temp_history.append(f"{name}: {text}")
+
+            # 사회자 최종 요약 카드 생성
+            else:
+                summary_prompt = (
+                    f"토론 주제: {st.session_state.current_topic}\n"
+                    f"대화 내용:\n" + "\n".join(history_context) + "\n\n"
+                    f"지침: 지금까지 오간 대화 내용을 바탕으로, 사회자로서 이번 주제('{st.session_state.current_topic}')에 대해 각 철학자가 내세운 최종 핵심 주장을 정확하고 깔끔하게 정리해 줘.\n"
+                    "반드시 아래 마크다운 형식으로만 작성할 것:\n"
+                    f"### 📊 [사회자] '{st.session_state.current_topic}'에 대한 철학자별 핵심 주장\n"
+                    "- **⚡ 니체**: ...\n"
+                    "- **🦉 소크라테스**: ...\n"
+                    "- **🦋 장자**: ...\n"
+                    "- **🕰️ 칸트**: ...\n"
+                    "- **🦁 홉스**: ..."
+                )
+                try:
+                    res = client.chat.completions.create(
+                        model="gemini-3.5-flash-lite",
+                        messages=[{"role": "system", "content": summary_prompt}],
+                    )
+                    summary_text = res.choices[0].message.content.strip()
+                except Exception:
+                    summary_text = (
+                        f"### 📊 [사회자] '{st.session_state.current_topic}'에 대한 철학자별 핵심 주장\n"
+                        "- **⚡ 니체**: 기존 도덕을 해체하고 스스로 가치를 세울 것.\n"
+                        "- **🦉 소크라테스**: 끊임없는 질문으로 무지를 깨달을 것.\n"
+                        "- **🦋 장자**: 세속적 잣대를 벗어나 무위자연을 따를 것.\n"
+                        "- **🕰️ 칸트**: 보편적 도덕 법칙과 의무를 지킬 것.\n"
+                        "- **🦁 홉스**: 강력한 질서와 규범으로 이기심을 통제할 것."
+                    )
+
+                st.session_state.messages.append({
+                    "type": "summary",
+                    "content": summary_text
+                })
+
+            st.session_state.step_count += 1
+            st.rerun()
+
+    else:
+        # 토론 종료 알림 및 재시작 버튼
+        st.success("🎉 아고라 광장의 열띤 토론이 모두 종료되었습니다!")
+        if st.button("🔄 새로운 주제로 대화하기"):
+            st.session_state.messages = []
+            st.session_state.discussion_active = False
+            st.session_state.step_count = 0
+            st.rerun()
