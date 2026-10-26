@@ -8,7 +8,7 @@ import streamlit as st
 # 페이지 기본 설정
 st.set_page_config(page_title="🏛️ AI 철학자 아고라 카톡방", page_icon="🏛️", layout="centered")
 
-# 카카오톡 스타일 Custom CSS (말풍선 및 꼬리 정교화)
+# 카카오톡 스타일 Custom CSS
 st.markdown("""
 <style>
     .stApp {
@@ -33,7 +33,7 @@ st.markdown("""
         font-weight: bold;
     }
 
-    .kakao-msg-container {
+    .kakao-msg-row {
         display: flex;
         margin-bottom: 14px;
         align-items: flex-start;
@@ -53,26 +53,25 @@ st.markdown("""
         box-shadow: 0 1px 3px rgba(0,0,0,0.1);
     }
     
-    .kakao-content {
+    .kakao-info-col {
         display: flex;
         flex-direction: column;
-        max-width: 360px;
     }
     
-    .kakao-name {
+    .kakao-sender {
         font-size: 0.82rem;
         color: #333333;
         margin-bottom: 5px;
         font-weight: bold;
     }
     
-    .kakao-bubble-wrapper {
+    .kakao-bubble-line {
         display: flex;
         align-items: flex-end;
         margin-bottom: 4px;
     }
     
-    .kakao-bubble {
+    .kakao-bubble-box {
         background-color: #FFFFFF;
         color: #111111;
         padding: 10px 14px;
@@ -80,11 +79,12 @@ st.markdown("""
         border-top-left-radius: 2px;
         font-size: 0.95rem;
         line-height: 1.4;
+        max-width: 340px;
         word-break: break-word;
         box-shadow: 0 1px 3px rgba(0,0,0,0.12);
     }
     
-    .kakao-time {
+    .kakao-timestamp {
         font-size: 0.72rem;
         color: #4B637E;
         margin-left: 6px;
@@ -181,25 +181,30 @@ if st.session_state.discussion_active:
     for chat in st.session_state.messages:
         if chat["type"] == "chat":
             lines = chat["lines"]
-            bubbles_html = ""
-            for idx, line in enumerate(lines):
-                time_html = f'<div class="kakao-time">{chat["time"]}</div>' if idx == len(lines) - 1 else ''
-                bubbles_html += f"""
-                <div class="kakao-bubble-wrapper">
-                    <div class="kakao-bubble">{line}</div>
-                    {time_html}
-                </div>
-                """
+            speaker = chat["speaker"]
+            icon = chat["icon"]
+            time_str = chat["time"]
             
+            # Streamlit 네이티브 컴포넌트와 깔끔한 HTML 블록 조합으로 태그 노출 원천 차단
             st.markdown(f"""
-            <div class="kakao-msg-container">
-                <div class="kakao-avatar">{chat['icon']}</div>
-                <div class="kakao-content">
-                    <div class="kakao-name">{chat['speaker']}</div>
-                    {bubbles_html}
-                </div>
-            </div>
+            <div class="kakao-msg-row">
+                <div class="kakao-avatar">{icon}</div>
+                <div class="kakao-info-col">
+                    <div class="kakao-sender">{speaker}</div>
             """, unsafe_allow_html=True)
+            
+            for idx, line in enumerate(lines):
+                is_last = (idx == len(lines) - 1)
+                time_div = f'<div class="kakao-timestamp">{time_str}</div>' if is_last else ''
+                
+                st.markdown(f"""
+                <div class="kakao-bubble-line">
+                    <div class="kakao-bubble-box">{line}</div>
+                    {time_div}
+                </div>
+                """, unsafe_allow_html=True)
+                
+            st.markdown("</div></div>", unsafe_allow_html=True)
             
         elif chat["type"] == "summary":
             st.markdown(f"""
@@ -230,7 +235,7 @@ if st.session_state.discussion_active:
                 if m['type'] == 'chat':
                     flat_history.append(f"{m['speaker']}: {' '.join(m['lines'])}")
 
-            # 1단계: 초반 입론 (문장별로 분리하여 여러 말풍선으로 연속 출력)
+            # 1단계: 초반 입론 (문장별 분리)
             if current_step == 0:
                 for name, info in PHILOSOPHERS.items():
                     intro_prompt = (
@@ -250,7 +255,6 @@ if st.session_state.discussion_active:
                     except Exception:
                         text = "이 주제는 우리가 다 같이 고민해볼 가치가 있는 중요한 문제입니다."
                     
-                    # 입론도 문장별로 깔끔하게 쪼개서 여러 말풍선으로 출력되도록 수정
                     sentences = [s.strip() for s in text.replace('!', '!|').replace('?', '?|').replace('.', '.|').split('|') if s.strip()]
                     if not sentences:
                         sentences = [text]
@@ -263,7 +267,7 @@ if st.session_state.discussion_active:
                         "time": now_time
                     })
 
-            # 난상토론 단계 (문장별 말풍선 분리)
+            # 난상토론 단계
             elif current_step < MAX_STEPS - 1:
                 selected_speakers = []
                 temp_pool = list(PHILOSOPHERS.keys())
@@ -279,78 +283,4 @@ if st.session_state.discussion_active:
                     info = PHILOSOPHERS[name]
                     prompt_content = (
                         f"{info['prompt']}\n\n"
-                        f"[토론 주제] {st.session_state.current_topic}\n\n"
-                        f"[대화방 흐름]\n" + ("\n".join(temp_history)) +
-                        f"\n\n지침: 직전 대화에 맞춰 1~2문장으로 즉각 반박하고, 고등학생도 이해하기 쉽게 아주 쉽게 말해라."
-                    )
-                    try:
-                        res = client.chat.completions.create(
-                            model="gemini-3.5-flash-lite",
-                            messages=[
-                                {"role": "system", "content": prompt_content},
-                                {"role": "user", "content": "반박해줘."}
-                            ],
-                        )
-                        text = res.choices[0].message.content.strip()
-                    except Exception:
-                        text = "그 방식은 문제의 본질을 잘못 짚은 것 같네요."
-                    
-                    sentences = [s.strip() for s in text.replace('!', '!|').replace('?', '?|').replace('.', '.|').split('|') if s.strip()]
-                    if not sentences:
-                        sentences = [text]
-
-                    st.session_state.messages.append({
-                        "type": "chat",
-                        "speaker": name,
-                        "icon": info["icon"],
-                        "lines": sentences,
-                        "time": now_time
-                    })
-                    temp_history.append(f"{name}: {text}")
-
-            # 사회자 최종 요약 카드 생성
-            else:
-                summary_prompt = (
-                    f"토론 주제: {st.session_state.current_topic}\n"
-                    f"대화 내용:\n" + "\n".join(flat_history) + "\n\n"
-                    f"지침: 지금까지 오간 대화 내용을 바탕으로, 사회자로서 이번 주제('{st.session_state.current_topic}')에 대해 각 철학자가 어떤 주장을 펼쳤는지 정리해 줘.\n"
-                    f"고등학생이 읽고 한눈에 이해할 수 있도록 쉽고 명확한 어휘로 정리해야 해.\n"
-                    "반드시 아래 마크다운 형식으로만 작성할 것:\n"
-                    f"### 📊 [사회자] '{st.session_state.current_topic}'에 대한 철학자별 핵심 주장\n"
-                    "- **⚡ 니체**: (고등학생 눈높이의 핵심 주장 1문장)\n"
-                    "- **🦉 소크라테스**: (고등학생 눈높이의 핵심 주장 1문장)\n"
-                    "- **🦋 장자**: (고등학생 눈높이의 핵심 주장 1문장)\n"
-                    "- **🕰️ 칸트**: (고등학생 눈높이의 핵심 주장 1문장)\n"
-                    "- **🦁 홉스**: (고등학생 눈높이의 핵심 주장 1문장)"
-                )
-                try:
-                    res = client.chat.completions.create(
-                        model="gemini-3.5-flash-lite",
-                        messages=[{"role": "system", "content": summary_prompt}],
-                    )
-                    summary_text = res.choices[0].message.content.strip()
-                except Exception:
-                    summary_text = (
-                        f"### 📊 [사회자] '{st.session_state.current_topic}'에 대한 철학자별 핵심 주장\n"
-                        "- **⚡ 니체**: 기존 도덕에 얽매이지 말고 스스로 삶의 주인이 되어 가치를 만들어야 한다.\n"
-                        "- **🦉 소크라테스**: 내가 잘 모른다는 사실을 깨닫고 질문을 통해 진리를 찾아가야 한다.\n"
-                        "- **🦋 장자**: 세속적 기준에 얽매이지 말고 자연스러운 흐름(무위자연)에 맡겨야 한다.\n"
-                        "- **🕰️ 칸트**: 누구에게나 예외 없이 적용되는 보편적인 도덕 원칙을 따라야 한다.\n"
-                        "- **🦁 홉스**: 인간의 이기심으로 인한 혼란을 막으려면 강력한 법과 통제가 필요하다."
-                    )
-
-                st.session_state.messages.append({
-                    "type": "summary",
-                    "content": summary_text
-                })
-
-            st.session_state.step_count += 1
-            st.rerun()
-
-    else:
-        st.success("🎉 아고라 광장의 열띤 토론이 모두 종료되었습니다!")
-        if st.button("🔄 새로운 주제로 대화하기"):
-            st.session_state.messages = []
-            st.session_state.discussion_active = False
-            st.session_state.step_count = 0
-            st.rerun()
+                        f
