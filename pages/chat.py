@@ -8,7 +8,7 @@ import streamlit as st
 # 페이지 기본 설정
 st.set_page_config(page_title="🏛️ AI 철학자 아고라 카톡방", page_icon="🏛️", layout="centered")
 
-# 카카오톡 스타일 Custom CSS
+# 카카오톡 스타일 Custom CSS (상단 공지 바 및 호버 X 표시 스타일 포함)
 st.markdown("""
 <style>
     .stApp {
@@ -16,11 +16,46 @@ st.markdown("""
     }
     
     .block-container {
-        padding-top: 2rem;
+        padding-top: 1rem;
         padding-bottom: 3rem;
         max-width: 600px;
     }
     
+    /* 카카오톡 상단 공지 바 스타일 */
+    .kakao-notice-bar {
+        background-color: #FFFFFF;
+        border-radius: 8px;
+        padding: 10px 14px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 15px;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        font-size: 0.9rem;
+        color: #333333;
+        position: relative;
+    }
+    .kakao-notice-left {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+    /* 호버 시 나타나는 삭제(X) 버튼 스타일 */
+    .kakao-notice-close {
+        display: none;
+        cursor: pointer;
+        font-weight: bold;
+        color: #888888;
+        font-size: 1rem;
+        padding: 0 4px;
+    }
+    .kakao-notice-bar:hover .kakao-notice-close {
+        display: block;
+    }
+
     .kakaotalk-notice {
         background-color: rgba(0, 0, 0, 0.15);
         color: white;
@@ -158,6 +193,10 @@ if "current_topic" not in st.session_state:
     st.session_state.current_topic = ""
 if "step_count" not in st.session_state:
     st.session_state.step_count = 0
+if "show_notice_bar" not in st.session_state:
+    st.session_state.show_notice_bar = False
+if "waiting_for_tikitaka_choice" not in st.session_state:
+    st.session_state.waiting_for_tikitaka_choice = False
 
 # 5. 토론 주제 입력 영역
 topic = st.text_input("아고라 채팅방에 던질 토론 주제를 입력하세요:", placeholder="예: 착한 사마리아인법을 국가가 법으로 강제해야 하는가?")
@@ -168,6 +207,8 @@ if st.button("💬 채팅방 입장 및 토론 시작"):
         st.session_state.current_topic = topic
         st.session_state.discussion_active = True
         st.session_state.step_count = 0
+        st.session_state.show_notice_bar = False
+        st.session_state.waiting_for_tikitaka_choice = False
         st.rerun()
     else:
         st.warning("토론 주제를 입력해 주세요.")
@@ -175,6 +216,22 @@ if st.button("💬 채팅방 입장 및 토론 시작"):
 # 6. 카카오톡 대화방 화면 렌더링
 if st.session_state.discussion_active:
     
+    # 📌 입론이 끝난 후(step_count >= 5) 상단에 2번 사진 형태의 공지 바 표시 (X를 눌러 지우기 가능)
+    if st.session_state.show_notice_bar:
+        col_bar1, col_bar2 = st.columns([0.92, 0.08])
+        with col_bar1:
+            st.markdown(f"""
+            <div class="kakao-notice-bar">
+                <div class="kakao-notice-left">
+                    <span>📢</span> <b>[공지]</b> {st.session_state.current_topic}
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
+        with col_bar2:
+            if st.button("✕", key="close_notice"):
+                st.session_state.show_notice_bar = False
+                st.rerun()
+
     st.markdown(f'<div class="kakaotalk-notice">📌 [토론 주제] {st.session_state.current_topic}</div>', unsafe_allow_html=True)
 
     # 대화 출력
@@ -205,6 +262,18 @@ if st.session_state.discussion_active:
                 
             st.markdown("</div></div>", unsafe_allow_html=True)
             
+        elif chat["type"] == "notice_card":
+            # 1번 사진 형태의 공지 등록 말풍선 및 버튼 영역
+            st.markdown(f"""
+            <div style="background-color: #FFFFFF; padding: 14px 18px; border-radius: 12px; margin: 10px 0 20px 52px; max-width: 320px; box-shadow: 0 1px 3px rgba(0,0,0,0.15); color: #111111;">
+                <div style="font-weight: bold; margin-bottom: 6px; font-size: 0.95rem;">공지가 등록되었습니다.</div>
+                <div style="font-size: 0.9rem; color: #333333; margin-bottom: 12px;">{st.session_state.current_topic}</div>
+                <div style="border-top: 1px solid #EAEAEA; padding-top: 8px; font-size: 0.85rem; color: #555555;">
+                    📄 이어서 티키타카(난상토론)를 진행하시겠습니까?
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
+            
         elif chat["type"] == "summary":
             st.markdown(f"""
             <div class="summary-card">
@@ -214,7 +283,21 @@ if st.session_state.discussion_active:
 
     MAX_STEPS = 8  # 입론 1회 + 난상토론 6회 + 요약 1회
     
-    if st.session_state.step_count < MAX_STEPS:
+    # 사용자가 티키타카 진행 여부를 선택 대기 중일 때 버튼 표시
+    if st.session_state.waiting_for_tikitaka_choice:
+        st.write("---")
+        col_b1, col_b2 = st.columns(2)
+        with col_b1:
+            if st.button("🚀 이어서 티키타카 진행하기", use_container_width=True):
+                st.session_state.waiting_for_tikitaka_choice = False
+                st.rerun()
+        with col_b2:
+            if st.button("📊 바로 사회자 요약으로 넘어가기", use_container_width=True):
+                st.session_state.waiting_for_tikitaka_choice = False
+                st.session_state.step_count = MAX_STEPS - 1  # 바로 요약 단계로 점프
+                st.rerun()
+
+    elif st.session_state.step_count < MAX_STEPS:
         
         current_step = st.session_state.step_count
         now_time = datetime.now().strftime("%p %I:%M").replace("AM", "오전").replace("PM", "오후")
@@ -234,7 +317,7 @@ if st.session_state.discussion_active:
                 if m['type'] == 'chat':
                     flat_history.append(f"{m['speaker']}: {' '.join(m['lines'])}")
 
-            # 1단계: 초반 입론 (문장별 분리)
+            # 1단계: 초반 입론 (처음 시작할 때는 공지 화면이 없음)
             if current_step == 0:
                 for name, info in PHILOSOPHERS.items():
                     intro_content = (
@@ -266,111 +349,7 @@ if st.session_state.discussion_active:
                         "lines": sentences,
                         "time": now_time
                     })
-
-            # 난상토론 단계
-            elif current_step < MAX_STEPS - 1:
-                selected_speakers = []
-                temp_pool = list(PHILOSOPHERS.keys())
-                random.shuffle(temp_pool)
-                for s in temp_pool:
-                    if s not in selected_speakers:
-                        selected_speakers.append(s)
-                    if len(selected_speakers) >= 3:
-                        break
-
-                temp_history = list(flat_history)
-                for name in selected_speakers:
-                    info = PHILOSOPHERS[name]
-                    debate_content = (
-                        f"{info['prompt']}\n\n"
-                        f"[토론 주제] {st.session_state.current_topic}\n\n"
-                        f"[지금까지의 대화 흐름]\n" + ("\n".join(temp_history)) +
-                        f"\n\n지침: 직전에 오간 대화 내용을 반드시 의식하고, 바로 직전에 발언한 내용이나 상대방의 논리를 구체적으로 지목하며 1~2문장으로 날카롭게 반박해라."
-                    )
-                    try:
-                        res = client.chat.completions.create(
-                            model="gemini-3.5-flash-lite",
-                            messages=[
-                                {"role": "user", "content": debate_content}
-                            ],
-                        )
-                        text = res.choices[0].message.content.strip()
-                        if not text:
-                            continue
-                    except Exception:
-                        continue
-                    
-                    sentences = [s.strip() for s in text.replace('!', '!|').replace('?', '?|').replace('.', '.|').split('|') if s.strip()]
-                    if not sentences:
-                        continue
-
-                    st.session_state.messages.append({
-                        "type": "chat",
-                        "speaker": name,
-                        "icon": info["icon"],
-                        "lines": sentences,
-                        "time": now_time
-                    })
-                    temp_history.append(f"{name}: {text}")
-
-            # 사회자 최종 요약 카드 생성 (API 실패 시 철학자별 관점 신규 생성)
-            else:
-                summary_content = (
-                    f"토론 주제: {st.session_state.current_topic}\n"
-                    f"실제 대화 내용:\n" + "\n".join(flat_history) + "\n\n"
-                    f"지침: 위 대화방에서 각 철학자가 실제로 주고받은 주장과 반박 내용을 바탕으로, 사회자로서 이번 주제('{st.session_state.current_topic}')에 대한 철학자별 핵심 입장을 고등학생 눈높이에 맞춰 요약해 줘.\n"
-                    "반드시 아래 마크다운 형식으로만 작성할 것:\n"
-                    f"### 📊 [사회자] '{st.session_state.current_topic}'에 대한 철학자별 핵심 주장\n"
-                    "- **⚡ 니체**: (실제 대화에서 니체가 펼친 주장을 반영한 1문장)\n"
-                    "- **🦉 소크라테스**: (실제 대화에서 소크라테스가 펼친 주장을 반영한 1문장)\n"
-                    "- **🦋 장자**: (실제 대화에서 장자가 펼친 주장을 반영한 1문장)\n"
-                    "- **🕰️ 칸트**: (실제 대화에서 칸트가 펼친 주장을 반영한 1문장)\n"
-                    "- **🦁 홉스**: (실제 대화에서 홉스가 펼친 주장을 반영한 1문장)"
-                )
-                try:
-                    res = client.chat.completions.create(
-                        model="gemini-3.5-flash-lite",
-                        messages=[
-                            {"role": "user", "content": summary_content}
-                        ],
-                    )
-                    summary_text = res.choices[0].message.content.strip()
-                except Exception:
-                    try:
-                        fallback_prompt = (
-                            f"토론 주제: {st.session_state.current_topic}\n"
-                            f"지침: 사회자로서 이번 주제('{st.session_state.current_topic}')에 대해 니체, 소크라테스, 장자, 칸트, 홉스가 각각 어떤 고유한 관점과 주장을 펼칠지 고등학생 눈높이에 맞춰 마크다운 형식으로 새로 작성해 주세요.\n"
-                            "반드시 아래 형식으로만 작성할 것:\n"
-                            f"### 📊 [사회자] '{st.session_state.current_topic}'에 대한 철학자별 핵심 주장\n"
-                            "- **⚡ 니체**: (주제에 맞는 니체 관점 1문장)\n"
-                            "- **🦉 소크라테스**: (주제에 맞는 소크라테스 관점 1문장)\n"
-                            "- **🦋 장자**: (주제에 맞는 장자 관점 1문장)\n"
-                            "- **🕰️ 칸트**: (주제에 맞는 칸트 관점 1문장)\n"
-                            "- **🦁 홉스**: (주제에 맞는 홉스 관점 1문장)"
-                        )
-                        fb_res = client.chat.completions.create(
-                            model="gemini-3.5-flash-lite",
-                            messages=[{"role": "user", "content": fallback_prompt}],
-                        )
-                        summary_text = fb_res.choices[0].message.content.strip()
-                    except Exception:
-                        summary_text = (
-                            f"### 📊 [사회자] '{st.session_state.current_topic}'에 대한 종합 브리핑\n"
-                            f"이번 주제인 '{st.session_state.current_topic}'에 대해 각 철학자들은 기존의 틀을 깨는 자율성(니체), 본질을 묻는 비판적 사고(소크라테스), 억지스러움을 버리는 자연스러움(장자), 보편적 의무(칸트), 그리고 사회적 질서와 통제(홉스)의 관점에서 깊이 있는 성찰을 나누어 주었습니다."
-                        )
-
-                st.session_state.messages.append({
-                    "type": "summary",
-                    "content": summary_text
-                })
-
-            st.session_state.step_count += 1
-            st.rerun()
-
-    else:
-        st.success("🎉 아고라 광장의 열띤 토론이 모두 종료되었습니다!")
-        if st.button("🔄 새로운 주제로 대화하기"):
-            st.session_state.messages = []
-            st.session_state.discussion_active = False
-            st.session_state.step_count = 0
-            st.rerun()
+                
+                # 입론이 모두 끝난 직후 공지 바와 "공지가 등록되었습니다" 말풍선 추가 후 일시 정지
+                st.session_state.show_notice_bar = True
+                st.session_state.messages.
