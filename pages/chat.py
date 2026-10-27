@@ -54,7 +54,7 @@ st.markdown("""
         white-space: nowrap;
     }
     
-    /* 펼쳐졌을 때 하단 버튼 영역 (마우스를 올릴 때만 버튼 모양으로 강조) */
+    /* 요청하신 상단 공지 펼쳐짐 버튼 영역 스타일 */
     .kakao-notice-buttons {
         display: flex;
         border-top: 1px solid #EAEAEA;
@@ -267,7 +267,7 @@ if st.session_state.discussion_active:
                 <div class="kakao-notice-top-row">
                     <div class="kakao-notice-left">
                         <span style="font-size: 1.1rem;">📢</span> 
-                        <span style="font-weight: bold; color: #111111;">{st.session_state.current_topic}</span>
+                        <span style="font-weight: bold; color: #111111;">철학자들의 티키타카를 더 들을지 확인해보세요!</span>
                     </div>
                 </div>
                 {expanded_html}
@@ -312,16 +312,18 @@ if st.session_state.discussion_active:
             st.markdown("</div></div>", unsafe_allow_html=True)
             
         elif chat["type"] == "notice_card":
+            # 공지 말풍선 내부에서 티키타카를 더 볼 것인지 물어보는 시스템 구현
             st.markdown(f"""
-            <div style="background-color: #FFFFFF; border-radius: 14px; margin: 10px 0 20px 52px; max-width: 320px; box-shadow: 0 1px 3px rgba(0,0,0,0.15); overflow: hidden; color: #111111;">
+            <div style="background-color: #FFFFFF; border-radius: 14px; margin: 10px 0 20px 52px; max-width: 340px; box-shadow: 0 1px 3px rgba(0,0,0,0.15); overflow: hidden; color: #111111;">
                 <div style="padding: 16px 18px;">
                     <div style="font-weight: bold; margin-bottom: 8px; font-size: 0.95rem;">공지가 등록되었습니다.</div>
-                    <div style="font-size: 0.95rem; color: #222222;">{st.session_state.current_topic}</div>
+                    <div style="font-size: 0.9rem; color: #333333; margin-bottom: 12px;">철학자들의 티키타카 토론을 더 이어서 들으시겠습니까?</div>
                 </div>
             """, unsafe_allow_html=True)
             
+            # 말풍선 안의 버튼 영역 (글 확인하기 기능 포함)
             with st.container():
-                if st.button("📋 글 확인하기  >", key=f"go_to_notice_{idx_msg}", use_container_width=True):
+                if st.button("📋 글 확인하기 (상단 공지로 이동)", key=f"go_to_notice_{idx_msg}", use_container_width=True):
                     st.markdown("""
                         <script>
                             const topElement = document.getElementById('top-anchor');
@@ -340,9 +342,9 @@ if st.session_state.discussion_active:
             </div>
             """, unsafe_allow_html=True)
 
-    # 총 7번의 티키타카(입론 1회 + 난상토론 6회) 이후 공지 및 선택지 제공, 마지막은 요약
     MAX_STEPS = 9  
     
+    # 사용자가 티키타카 진행 여부를 선택 대기 중일 때 버튼 표시
     if st.session_state.waiting_for_tikitaka_choice:
         st.write("---")
         col_b1, col_b2 = st.columns(2)
@@ -410,7 +412,7 @@ if st.session_state.discussion_active:
                 st.session_state.step_count += 1
                 st.rerun()
 
-            # 난상토론 단계 (총 6번 반복하여 충분한 대화 유도)
+            # 난상토론 단계 (총 6번 반복)
             elif current_step < MAX_STEPS - 1:
                 selected_speakers = []
                 temp_pool = list(PHILOSOPHERS.keys())
@@ -456,7 +458,7 @@ if st.session_state.discussion_active:
 
                 st.session_state.step_count += 1
                 
-                # 6번의 난상토론(총 7단계)이 끝나면 공지 바 및 말풍선 띄우기
+                # 6번의 난상토론(총 7단계)이 끝나면 상단 고정 공지 바 및 공지 말풍선 띄우기
                 if st.session_state.step_count >= 7:
                     st.session_state.show_notice_bar = True
                     st.session_state.notice_expanded = False
