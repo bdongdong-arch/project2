@@ -8,7 +8,7 @@ import streamlit as st
 # 페이지 기본 설정
 st.set_page_config(page_title="🏛️ AI 철학자 아고라 카톡방", page_icon="🏛️", layout="centered")
 
-# 카카오톡 스타일 Custom CSS
+# 카카오톡 스타일 Custom CSS (철학자별 고유 색상 설정 포함)
 st.markdown("""
 <style>
     .stApp {
@@ -54,7 +54,6 @@ st.markdown("""
         white-space: nowrap;
     }
     
-    /* 요청하신 상단 공지 펼쳐짐 버튼 영역 스타일 */
     .kakao-notice-buttons {
         display: flex;
         border-top: 1px solid #EAEAEA;
@@ -115,13 +114,6 @@ st.markdown("""
         flex-direction: column;
     }
     
-    .kakao-sender {
-        font-size: 0.82rem;
-        color: #333333;
-        margin-bottom: 5px;
-        font-weight: bold;
-    }
-    
     .kakao-bubble-line {
         display: flex;
         align-items: flex-end;
@@ -162,7 +154,7 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# 페이지 최상단 앵커 (글 확인하기 클릭 시 위로 이동하기 위함)
+# 페이지 최상단 앵커
 st.markdown('<div id="top-anchor"></div>', unsafe_allow_html=True)
 
 st.title("🏛️ AI 철학자 그룹채팅")
@@ -180,32 +172,37 @@ client = OpenAI(
     base_url="https://generativelanguage.googleapis.com/v1beta/openai/",
 )
 
-# 3. 5인 철학자 페르소나 정의
+# 3. 5인 철학자 페르소나 정의 (철학자별 고유 색상 및 이름 호칭 규칙 부여)
 PHILOSOPHERS = {
     "니체": {
         "icon": "⚡",
+        "color": "#D32F2F", # 강렬한 빨강
         "description": "기존 도덕을 깨부수고 스스로 가치를 만들라는 사상가",
-        "prompt": "너는 프레드리히 니체다. 고등학생도 이해하기 쉽게 쉬운 단어로, 직전 대화에서 나온 상대의 주장을 예리하게 꼬집으며 '네 생각은 기존의 뻔한 틀에 갇혀 있다'고 반박하는 내용을 1~2문장으로 말해라. 반드시 순수 한국어로만 답해라."
+        "prompt": "너는 프레드리히 니체다. 고등학생도 이해하기 쉽게 쉬운 단어로 대답해라. 상대방을 부를 때 '네'라는 호칭을 남발하지 말고, 상대방의 이름(소크라테스, 장자, 칸트, 홉스 중 한 명)을 자연스럽게 언급하며 그 주장을 예리하게 반박해라. 반드시 순수 한국어로만 1~2문장으로 답해라."
     },
     "소크라테스": {
         "icon": "🦉",
+        "color": "#1976D2", # 신중한 파랑
         "description": "질문을 통해 자신의 무지를 깨닫게 하는 철학자",
-        "prompt": "너는 소크라테스다. 고등학생도 이해하기 쉽게 쉬운 단어로, 직전 상대의 주장이 가진 모순이나 허점을 파고드는 날카로운 반문이나 질문을 1~2문장으로 던져라. 반드시 순수 한국어로만 답해라."
+        "prompt": "너는 소크라테스다. 고등학생도 이해하기 쉽게 쉬운 단어로 대답해라. '네'라는 호칭은 최소화하고, 반박할 상대의 이름(니체, 장자, 칸트, 홉스 중 한 명)을 직접 부르며 날카로운 질문이나 반문을 던져라. 반드시 순수 한국어로만 1~2문장으로 답해라."
     },
     "장자": {
         "icon": "🦋",
+        "color": "#388E3C", # 자연의 초록
         "description": "자연의 흐름에 맡기고 억지로 하지 말라는 도인",
-        "prompt": "너는 장자다. 고등학생도 이해하기 쉽게 쉬운 단어로, 직전 상대가 세우는 억지스러운 기준이나 주장을 비웃으며 자연스럽게 흘러가야 한다는 대안을 1~2문장으로 재치 있게 받아쳐라. 반드시 순수 한국어로만 답해라."
+        "prompt": "너는 장자다. 고등학생도 이해하기 쉽게 쉬운 단어로 대답해라. '네'라는 호칭 대신 상대방의 이름(니체, 소크라테스, 칸트, 홉스 중 한 명)을 언급하며 억지스러운 주장을 재치 있게 받아쳐라. 반드시 순수 한국어로만 1~2문장으로 답해라."
     },
     "칸트": {
         "icon": "🕰️",
+        "color": "#7B1FA2", # 원칙의 보라
         "description": "누구나 지켜야 할 보편적인 도덕 원칙을 강조하는 원칙주의자",
-        "prompt": "너는 이마누엘 칸트다. 고등학생도 쉽게, 직전 상대의 주장이 보편적인 도덕 원칙과 의무를 저버린 무책임한 생각이라고 단호하게 반박하는 내용을 1~2문장으로 말해라. 반드시 순수 한국어로만 답해라."
+        "prompt": "너는 이마누엘 칸트다. 고등학생도 쉽게 대답해라. '네'라는 호칭을 자제하고, 상대방의 이름(니체, 소크라테스, 장자, 홉스 중 한 명)을 부르며 도덕적 의무와 원칙을 저버렸다고 단호하게 반박해라. 반드시 순수 한국어로만 1~2문장으로 답해라."
     },
     "홉스": {
         "icon": "🦁",
+        "color": "#E65100", # 현실의 주황
         "description": "인간의 이기심을 막기 위해 강력한 법과 질서가 필요하다는 현실주의자",
-        "prompt": "너는 토마스 홉스다. 고등학생 수준에 맞춰, 직전 상대의 주장이 현실을 모르는 나이브한 공상이라 깎아내리며 강력한 통제와 질서가 왜 필수적인지 1~2문장으로 팩트를 짚어 반박해라. 반드시 순수 한국어로만 답해라."
+        "prompt": "너는 토마스 홉스다. 고등학생 수준에 맞춰 대답해라. '네'라는 호칭보다는 상대방의 이름(니체, 소크라테스, 장자, 칸트 중 한 명)을 직접 언급하며 현실성 없는 공상이라고 팩트를 짚어 반박해라. 반드시 순수 한국어로만 1~2문장으로 답해라."
     }
 }
 
@@ -289,22 +286,25 @@ if st.session_state.discussion_active:
             lines = chat["lines"]
             speaker = chat["speaker"]
             icon = chat["icon"]
+            color = chat["color"]
             time_str = chat["time"]
             
+            # 발신자 이름 색상 적용
             st.markdown(f"""
             <div class="kakao-msg-row">
                 <div class="kakao-avatar">{icon}</div>
                 <div class="kakao-info-col">
-                    <div class="kakao-sender">{speaker}</div>
+                    <div class="kakao-sender" style="color: {color}; font-weight: bold;">{speaker}</div>
             """, unsafe_allow_html=True)
             
             for idx, line in enumerate(lines):
                 is_last = (idx == len(lines) - 1)
                 time_div = f'<div class="kakao-timestamp">{time_str}</div>' if is_last else ''
                 
+                # 말풍선 테두리 및 색상 강조
                 st.markdown(f"""
                 <div class="kakao-bubble-line">
-                    <div class="kakao-bubble-box">{line}</div>
+                    <div class="kakao-bubble-box" style="border-left: 4px solid {color};">{line}</div>
                     {time_div}
                 </div>
                 """, unsafe_allow_html=True)
@@ -312,7 +312,6 @@ if st.session_state.discussion_active:
             st.markdown("</div></div>", unsafe_allow_html=True)
             
         elif chat["type"] == "notice_card":
-            # 공지 말풍선 내부에서 티키타카를 더 볼 것인지 물어보는 시스템 구현
             st.markdown(f"""
             <div style="background-color: #FFFFFF; border-radius: 14px; margin: 10px 0 20px 52px; max-width: 340px; box-shadow: 0 1px 3px rgba(0,0,0,0.15); overflow: hidden; color: #111111;">
                 <div style="padding: 16px 18px;">
@@ -321,7 +320,6 @@ if st.session_state.discussion_active:
                 </div>
             """, unsafe_allow_html=True)
             
-            # 말풍선 안의 버튼 영역 (글 확인하기 기능 포함)
             with st.container():
                 if st.button("📋 글 확인하기 (상단 공지로 이동)", key=f"go_to_notice_{idx_msg}", use_container_width=True):
                     st.markdown("""
@@ -344,7 +342,6 @@ if st.session_state.discussion_active:
 
     MAX_STEPS = 9  
     
-    # 사용자가 티키타카 진행 여부를 선택 대기 중일 때 버튼 표시
     if st.session_state.waiting_for_tikitaka_choice:
         st.write("---")
         col_b1, col_b2 = st.columns(2)
@@ -405,6 +402,7 @@ if st.session_state.discussion_active:
                         "type": "chat",
                         "speaker": name,
                         "icon": info["icon"],
+                        "color": info["color"],
                         "lines": sentences,
                         "time": now_time
                     })
@@ -430,7 +428,7 @@ if st.session_state.discussion_active:
                         f"{info['prompt']}\n\n"
                         f"[토론 주제] {st.session_state.current_topic}\n\n"
                         f"[지금까지의 대화 흐름]\n" + ("\n".join(temp_history)) +
-                        f"\n\n지침: 직전에 오간 대화 내용을 반드시 의식하고, 바로 직전에 발언한 내용이나 상대방의 논리를 구체적으로 지목하며 1~2문장으로 날카롭게 반박해라."
+                        f"\n\n지침: 직전에 오간 대화 내용을 반드시 의식하고, '네'라는 호칭 대신 상대방의 이름(예: 소크라테스, 니체 등)을 자연스럽게 불러가며 1~2문장으로 날카롭게 반박해라."
                     )
                     try:
                         res = client.chat.completions.create(
@@ -451,6 +449,7 @@ if st.session_state.discussion_active:
                         "type": "chat",
                         "speaker": name,
                         "icon": info["icon"],
+                        "color": info["color"],
                         "lines": sentences,
                         "time": now_time
                     })
