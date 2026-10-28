@@ -266,7 +266,6 @@ if st.session_state.discussion_active:
     elif st.session_state.step_count < MAX_STEPS:
         
         current_step = st.session_state.step_count
-        # 한국 표준시(KST, UTC+9) 기준 시간 설정
         kst = timezone(timedelta(hours=9))
         now_time = datetime.now(kst).strftime("%p %I:%M").replace("AM", "오전").replace("PM", "오후")
         
@@ -285,13 +284,13 @@ if st.session_state.discussion_active:
                 if m['type'] == 'chat':
                     flat_history.append(f"{m['speaker']}: {' '.join(m['lines'])}")
 
-            # 1단계: 초반 입론
+            # 1단계: 초반 입론 (주장에 대한 입장을 1~2줄로 펼치도록 수정)
             if current_step == 0:
                 for name, info in PHILOSOPHERS.items():
                     intro_content = (
                         f"{info['prompt']}\n\n"
                         f"[토론 주제] {st.session_state.current_topic}\n\n"
-                        f"지침: 이 주제에 대한 너의 철학적 입장을 2~3문장으로 진중하게 밝혀라. 고등학생이 직관적으로 이해할 수 있는 쉬운 어휘를 써라."
+                        f"지침: 이 토론 주제에 대한 너의 철학적 입장을 1~2줄(1~2문장)로 핵심만 간결하게 진중하게 밝혀라. 고등학생이 직관적으로 이해할 수 있는 쉬운 어휘를 써라."
                     )
                     try:
                         res = client.chat.completions.create(
