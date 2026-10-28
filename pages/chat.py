@@ -8,7 +8,7 @@ import streamlit as st
 # 페이지 기본 설정
 st.set_page_config(page_title="🏛️ AI 철학자 아고라 카톡방", page_icon="🏛️", layout="centered")
 
-# 카카오톡 스타일 Custom CSS (철학자별 고유 색상 설정 포함)
+# 카카오톡 스타일 Custom CSS
 st.markdown("""
 <style>
     .stApp {
@@ -172,13 +172,13 @@ client = OpenAI(
     base_url="https://generativelanguage.googleapis.com/v1beta/openai/",
 )
 
-# 3. 5인 철학자 페르소나 정의 (철학자별 고유 색상 및 이름 호칭 규칙 부여)
+# 3. 5인 철학자 페르소나 정의 (고유 색상 코드 지정)
 PHILOSOPHERS = {
     "니체": {
         "icon": "⚡",
         "color": "#D32F2F", # 강렬한 빨강
         "description": "기존 도덕을 깨부수고 스스로 가치를 만들라는 사상가",
-        "prompt": "너는 프레드리히 니체다. 고등학생도 이해하기 쉽게 쉬운 단어로 대답해라. 상대방을 부를 때 '네'라는 호칭을 남발하지 말고, 상대방의 이름(소크라테스, 장자, 칸트, 홉스 중 한 명)을 자연스럽게 언급하며 그 주장을 예리하게 반박해라. 반드시 순수 한국어로만 1~2문장으로 답해라."
+        "prompt": "너는 프레드리히 니체다. 고등학생도 이해하기 쉽게 쉬운 단어로 대답해라. '네'라는 호칭을 남발하지 말고, 상대방의 이름(소크라테스, 장자, 칸트, 홉스 중 한 명)을 자연스럽게 언급하며 그 주장을 예리하게 반박해라. 반드시 순수 한국어로만 1~2문장으로 답해라."
     },
     "소크라테스": {
         "icon": "🦉",
@@ -205,6 +205,13 @@ PHILOSOPHERS = {
         "prompt": "너는 토마스 홉스다. 고등학생 수준에 맞춰 대답해라. '네'라는 호칭보다는 상대방의 이름(니체, 소크라테스, 장자, 칸트 중 한 명)을 직접 언급하며 현실성 없는 공상이라고 팩트를 짚어 반박해라. 반드시 순수 한국어로만 1~2문장으로 답해라."
     }
 }
+
+# 텍스트 내 철학자 이름에 색상을 입혀주는 헬퍼 함수
+def colorize_philosopher_names(text):
+    for name, info in PHILOSOPHERS.items():
+        colored_tag = f"<span style='color: {info['color']}; font-weight: bold;'>{name}</span>"
+        text = text.replace(name, colored_tag)
+    return text
 
 # 4. 세션 상태 초기화
 if "messages" not in st.session_state:
@@ -289,7 +296,6 @@ if st.session_state.discussion_active:
             color = chat["color"]
             time_str = chat["time"]
             
-            # 발신자 이름 색상 적용
             st.markdown(f"""
             <div class="kakao-msg-row">
                 <div class="kakao-avatar">{icon}</div>
@@ -301,10 +307,12 @@ if st.session_state.discussion_active:
                 is_last = (idx == len(lines) - 1)
                 time_div = f'<div class="kakao-timestamp">{time_str}</div>' if is_last else ''
                 
-                # 말풍선 테두리 및 색상 강조
+                # 말풍선 안의 철학자 이름에 고유 색상 적용
+                colored_line = colorize_philosopher_names(line)
+                
                 st.markdown(f"""
                 <div class="kakao-bubble-line">
-                    <div class="kakao-bubble-box" style="border-left: 4px solid {color};">{line}</div>
+                    <div class="kakao-bubble-box" style="border-left: 4px solid {color};">{colored_line}</div>
                     {time_div}
                 </div>
                 """, unsafe_allow_html=True)
