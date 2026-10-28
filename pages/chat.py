@@ -122,7 +122,7 @@ PHILOSOPHERS = {
         "icon": "⚡",
         "color": "#D32F2F",
         "description": "기존 도덕을 깨부수고 스스로 가치를 만들라는 사상가",
-        "prompt": "너는 프레드리히 니체다. 고등학생도 이해하기 쉽게 쉬운 단어로 대답해라. 상대방을 부를 때 '네'라는 호칭을 남발하지 말고, 상대방의 이름을 언급하며 그 주장을 예리하게 반박해라. 반드시 순수 한국어로만 답해라."
+        "prompt": "너는 프레드리히 니체다. 고등학생도 이해하기 쉽게 쉬운 단어로 대답해라. '네'라는 호칭을 남발하지 말고, 상대방의 이름을 언급하며 그 주장을 예리하게 반박해라. 반드시 순수 한국어로만 답해라."
     },
     "소크라테스": {
         "icon": "🦉",
@@ -219,28 +219,6 @@ if st.session_state.discussion_active:
                 
             st.markdown("</div></div>", unsafe_allow_html=True)
             
-        elif chat["type"] == "notice_card":
-            st.markdown(f"""
-            <div style="background-color: #FFFFFF; border-radius: 14px; margin: 10px 0 20px 52px; max-width: 340px; box-shadow: 0 1px 3px rgba(0,0,0,0.15); overflow: hidden; color: #111111;">
-                <div style="padding: 16px 18px;">
-                    <div style="font-weight: bold; margin-bottom: 8px; font-size: 0.95rem;">공지가 등록되었습니다.</div>
-                    <div style="font-size: 0.9rem; color: #333333; margin-bottom: 12px;">철학자들의 티키타카 토론을 더 이어서 들으시겠습니까?</div>
-                </div>
-            """, unsafe_allow_html=True)
-            
-            with st.container():
-                if st.button("📋 글 확인하기 (상단으로 이동)", key=f"go_to_notice_{idx_msg}", use_container_width=True):
-                    st.markdown("""
-                        <script>
-                            const topElement = document.getElementById('top-anchor');
-                            if (topElement) {
-                                topElement.scrollIntoView({ behavior: 'smooth' });
-                            }
-                        </script>
-                    """, unsafe_allow_html=True)
-            
-            st.markdown("</div>", unsafe_allow_html=True)
-            
         elif chat["type"] == "summary":
             st.markdown(f"""
             <div class="summary-card">
@@ -313,38 +291,60 @@ if st.session_state.discussion_active:
                         "icon": info["icon"],
                         "color": info["color"],
                         "lines": sentences,
-                        "time": time_str if 'time_str' in locals() else now_time
+                        "time": now_time
                     })
                 
                 st.session_state.step_count += 1
                 st.rerun()
 
-            # 난상토론 단계 (한 철학자가 여러 공격을 받았을 때 종합하여 한 번에 간결하게 반박하도록 유도)
+            # 난상토론 단계 (지목당한 철학자가 직전의 공격들을 종합하여 반박하도록 제어)
             elif current_step < MAX_STEPS - 1:
-                # 무작위로 발언할 철학자 2~3명 선택
-                selected_speakers = []
-                temp_pool = list(PHILOSOPHERS.keys())
-                random.shuffle(temp_pool)
-                for s in temp_pool:
-                    if s not in selected_speakers:
-                        selected_speakers.append(s)
-                    if len(selected_speakers) >= random.randint(2, 3):
-                        break
+                # 최근 대화에서 가장 많이 공격받은(이름이 불린) 철학자를 타겟으로 지정하거나 무작위 선정
+                recent_messages = [m for m in st.session_state.messages if m['type'] == 'chat']
+                attacked_counts = {name: 0 for name in PHILOSOPHERS.keys()}
+                
+                for m in recent_messages[-4:]:
+                    msg_text = " ".join(m['lines'])
+                    for name in PHILOSOPHERS.keys():
+                        if name in msg_text and m['speaker'] != name:
+                            attacked_counts[name] += 1
+
+                # 가장 많이 공격받은 철학자를 우선 선택, 없으면 무작위 선택
+                sorted_targets = sorted(attacked_counts.items(), key=lambda x: x[1], reverse=True)
+                target_speaker = sorted_targets[0][0] if sorted_targets[0][1] > 0 else random.choice(list(PHILOSOPHERS.keys()))
+                
+                # 공격자 1~2명도 함께 발언하도록 구성
+                speakers_to_act = [target_speaker]
+                other_philos = [n for n in PHILOSOPHERS.keys() if n != target_speaker]
+                random.shuffle(other_philos)
+                speakers_to_act.extend(other_philos[:random.randint(1, 2)])
+                random.shuffle(speakers_to_act)
 
                 temp_history = list(flat_history)
-                for name in selected_speakers:
+                for name in speakers_to_act:
                     info = PHILOSOPHERS[name]
                     
                     previous_statements = [m['lines'] for m in st.session_state.messages if m['type'] == 'chat' and m['speaker'] == name]
                     last_statement_str = " ".join(previous_statements[-1]) if previous_statements else "없음"
 
-                    debate_content = (
-                        f"{info['prompt']}\n\n"
-                        f"[토론 주제] {st.session_state.current_topic}\n\n"
-                        f"[지금까지의 대화 흐름]\n" + ("\n".join(temp_history)) +
-                        f"\n\n[주의사항 - 중요!]: 너({name})가 직전에 했던 발언 내용: \"{last_statement_str}\"\n"
-                        f"지침: 직전에 네가 했던 말을 단순 반복하지 말고, 최근에 너를 공격한 상대들의 주장에 대해 **각각의 반론을 하나의 말풍선 안에서 짧고 간결하게(총 2문장 이내로)** 요약하여 명쾌하게 받아쳐라. 절대 길게 쓰지 말고 핵심만 짚어라."
-                    )
+                    if name == target_speaker:
+                        # 타겟이 된 철학자는 자신을 공격한 여러 내용들을 종합해서 한 번에 반박
+                        debate_content = (
+                            f"{info['prompt']}\n\n"
+                            f"[토론 주제] {st.session_state.current_topic}\n\n"
+                            f"[지금까지의 대화 흐름]\n" + ("\n".join(temp_history)) +
+                            f"\n\n[상황 안내]: 방금 다른 철학자들이 너({name})를 집중적으로 공격하거나 지목했다.\n"
+                            f"지침: 너를 공격한 상대들의 주장에 대해, 각각의 비판을 **하나의 말풍선 안에서 (최대 2~3문장 이내로) 깔끔하게 종합하여 단호하게 받아쳐라.** 횡설수설하지 말고 핵심만 요약해서 반박해라."
+                        )
+                    else:
+                        debate_content = (
+                            f"{info['prompt']}\n\n"
+                            f"[토론 주제] {st.session_state.current_topic}\n\n"
+                            f"[지금까지의 대화 흐름]\n" + ("\n".join(temp_history)) +
+                            f"\n\n[주의사항 - 중요!]: 너({name})가 직전에 했던 발언 내용: \"{last_statement_str}\"\n"
+                            f"지침: 직전에 네가 했던 말을 단순 반복하지 말고, 다른 철학자의 주장에 대해 새로운 각도에서 1~2문장으로 날카롭게 반박해라."
+                        )
+
                     try:
                         res = client.chat.completions.create(
                             model="gemini-3.5-flash-lite",
@@ -360,8 +360,10 @@ if st.session_state.discussion_active:
                     if not sentences:
                         continue
 
-                    # 너무 길 경우 최대 2문장까지만 허용하여 말풍선 비대화 방지
-                    sentences = sentences[:2]
+                    if name == target_speaker:
+                        sentences = sentences[:3]  # 종합 반박은 최대 3문장까지 허용
+                    else:
+                        sentences = sentences[:2]  # 일반 반박은 최대 2문장
 
                     st.session_state.messages.append({
                         "type": "chat",
@@ -376,9 +378,6 @@ if st.session_state.discussion_active:
                 st.session_state.step_count += 1
                 
                 if st.session_state.step_count >= 7:
-                    st.session_state.messages.append({
-                        "type": "notice_card"
-                    })
                     st.session_state.waiting_for_tikitaka_choice = True
 
                 st.rerun()
