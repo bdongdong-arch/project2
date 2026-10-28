@@ -172,13 +172,13 @@ client = OpenAI(
     base_url="https://generativelanguage.googleapis.com/v1beta/openai/",
 )
 
-# 3. 5인 철학자 페르소나 정의 (고유 색상 코드 지정)
+# 3. 5인 철학자 페르소나 정의 (철학자별 고유 색상 및 이름 호칭 규칙 부여)
 PHILOSOPHERS = {
     "니체": {
         "icon": "⚡",
         "color": "#D32F2F", # 강렬한 빨강
         "description": "기존 도덕을 깨부수고 스스로 가치를 만들라는 사상가",
-        "prompt": "너는 프레드리히 니체다. 고등학생도 이해하기 쉽게 쉬운 단어로 대답해라. '네'라는 호칭을 남발하지 말고, 상대방의 이름(소크라테스, 장자, 칸트, 홉스 중 한 명)을 자연스럽게 언급하며 그 주장을 예리하게 반박해라. 반드시 순수 한국어로만 1~2문장으로 답해라."
+        "prompt": "너는 프레드리히 니체다. 고등학생도 이해하기 쉽게 쉬운 단어로 대답해라. 상대방을 부를 때 '네'라는 호칭을 남발하지 말고, 상대방의 이름(소크라테스, 장자, 칸트, 홉스 중 한 명)을 자연스럽게 언급하며 그 주장을 예리하게 반박해라. 반드시 순수 한국어로만 1~2문장으로 답해라."
     },
     "소크라테스": {
         "icon": "🦉",
@@ -307,7 +307,6 @@ if st.session_state.discussion_active:
                 is_last = (idx == len(lines) - 1)
                 time_div = f'<div class="kakao-timestamp">{time_str}</div>' if is_last else ''
                 
-                # 말풍선 안의 철학자 이름에 고유 색상 적용
                 colored_line = colorize_philosopher_names(line)
                 
                 st.markdown(f"""
@@ -465,7 +464,6 @@ if st.session_state.discussion_active:
 
                 st.session_state.step_count += 1
                 
-                # 6번의 난상토론(총 7단계)이 끝나면 상단 고정 공지 바 및 공지 말풍선 띄우기
                 if st.session_state.step_count >= 7:
                     st.session_state.show_notice_bar = True
                     st.session_state.notice_expanded = False
@@ -476,49 +474,34 @@ if st.session_state.discussion_active:
 
                 st.rerun()
 
-            # 사회자 최종 요약 카드 생성
+            # 사회자 최종 요약 카드 생성 (간소화된 관점 1문장 생성 및 색상 적용)
             else:
-                summary_content = (
+                summary_prompt = (
                     f"토론 주제: {st.session_state.current_topic}\n"
-                    f"실제 대화 내용:\n" + "\n".join(flat_history) + "\n\n"
-                    f"지침: 위 대화방에서 각 철학자가 실제로 주고받은 주장과 반박 내용을 바탕으로, 사회자로서 이번 주제('{st.session_state.current_topic}')에 대한 철학자별 핵심 입장을 고등학생 눈높이에 맞춰 요약해 줘.\n"
-                    "반드시 아래 마크다운 형식으로만 작성할 것:\n"
+                    f"지침: 사회자로서 이번 주제('{st.session_state.current_topic}')에 대해 니체, 소크라테스, 장자, 칸트, 홉스가 각각 어떤 고유한 관점과 주장을 펼칠지 고등학생 눈높이에 맞춰 마크다운 형식으로 작성해 주세요.\n"
+                    "반드시 아래 형식으로만 작성하고, 각 철학자 이름 부분에 HTML 스타일 색상을 적용하여 가독성을 높여주세요:\n"
                     f"### 📊 [사회자] '{st.session_state.current_topic}'에 대한 철학자별 핵심 주장\n"
-                    "- **⚡ 니체**: (실제 대화에서 니체가 펼친 주장을 반영한 1문장)\n"
-                    "- **🦉 소크라테스**: (실제 대화에서 소크라테스가 펼친 주장을 반영한 1문장)\n"
-                    "- **🦋 장자**: (실제 대화에서 장자가 펼친 주장을 반영한 1문장)\n"
-                    "- **🕰️ 칸트**: (실제 대화에서 칸트가 펼친 주장을 반영한 1문장)\n"
-                    "- **🦁 홉스**: (실제 대화에서 홉스가 펼친 주장을 반영한 1문장)"
+                    f"- **⚡ <span style='color: {PHILOSOPHERS['니체']['color']};'>니체</span>**: (주제에 맞는 니체 관점 1문장)\n"
+                    f"- **🦉 <span style='color: {PHILOSOPHERS['소크라테스']['color']};'>소크라테스</span>**: (주제에 맞는 소크라테스 관점 1문장)\n"
+                    f"- **🦋 <span style='color: {PHILOSOPHERS['장자']['color']};'>장자</span>**: (주제에 맞는 장자 관점 1문장)\n"
+                    f"- **🕰️ <span style='color: {PHILOSOPHERS['칸트']['color']};'>칸트</span>**: (주제에 맞는 칸트 관점 1문장)\n"
+                    f"- **🦁 <span style='color: {PHILOSOPHERS['홉스']['color']};'>홉스</span>**: (주제에 맞는 홉스 관점 1문장)"
                 )
                 try:
                     res = client.chat.completions.create(
                         model="gemini-3.5-flash-lite",
-                        messages=[{"role": "user", "content": summary_content}],
+                        messages=[{"role": "user", "content": summary_prompt}],
                     )
                     summary_text = res.choices[0].message.content.strip()
                 except Exception:
-                    try:
-                        fallback_prompt = (
-                            f"토론 주제: {st.session_state.current_topic}\n"
-                            f"지침: 사회자로서 이번 주제('{st.session_state.current_topic}')에 대해 니체, 소크라테스, 장자, 칸트, 홉스가 각각 어떤 고유한 관점과 주장을 펼칠지 고등학생 눈높이에 맞춰 마크다운 형식으로 새로 작성해 주세요.\n"
-                            "반드시 아래 형식으로만 작성할 것:\n"
-                            f"### 📊 [사회자] '{st.session_state.current_topic}'에 대한 철학자별 핵심 주장\n"
-                            "- **⚡ 니체**: (주제에 맞는 니체 관점 1문장)\n"
-                            "- **🦉 소크라테스**: (주제에 맞는 소크라테스 관점 1문장)\n"
-                            "- **🦋 장자**: (주제에 맞는 장자 관점 1문장)\n"
-                            "- **🕰️ 칸트**: (주제에 맞는 칸트 관점 1문장)\n"
-                            "- **🦁 홉스**: (주제에 맞는 홉스 관점 1문장)"
-                        )
-                        fb_res = client.chat.completions.create(
-                            model="gemini-3.5-flash-lite",
-                            messages=[{"role": "user", "content": fallback_prompt}],
-                        )
-                        summary_text = fb_res.choices[0].message.content.strip()
-                    except Exception:
-                        summary_text = (
-                            f"### 📊 [사회자] '{st.session_state.current_topic}'에 대한 종합 브리핑\n"
-                            f"이번 주제인 '{st.session_state.current_topic}'에 대해 각 철학자들은 기존의 틀을 깨는 자율성(니체), 본질을 묻는 비판적 사고(소크라테스), 억지스러움을 버리는 자연스러움(장자), 보편적 의무(칸트), 그리고 사회적 질서와 통제(홉스)의 관점에서 깊이 있는 성찰을 나누어 주었습니다."
-                        )
+                    summary_text = (
+                        f"### 📊 [사회자] '{st.session_state.current_topic}'에 대한 철학자별 핵심 주장\n"
+                        f"- **⚡ <span style='color: {PHILOSOPHERS['니체']['color']};'>니체</span>**: 기존의 뻔한 틀을 깨부수고 스스로의 가치를 창조해야 한다.\n"
+                        f"- **🦉 <span style='color: {PHILOSOPHERS['소크라테스']['color']};'>소크라테스</span>**: 네가 아는 것이 정말 진실인지 끊임없이 질문하고 무지를 깨달아야 한다.\n"
+                        f"- **🦋 <span style='color: {PHILOSOPHERS['장자']['color']};'>장자</span>**: 억지로 무언가 하려 하지 말고 자연의 흐름에 그대로 몸을 맡겨야 한다.\n"
+                        f"- **🕰️ <span style='color: {PHILOSOPHERS['칸트']['color']};'>칸트</span>**: 상황이 어떻든 보편적인 도덕 법칙과 의무를 엄격하게 지켜야 한다.\n"
+                        f"- **🦁 <span style='color: {PHILOSOPHERS['홉스']['color']};'>홉스</span>**: 인간의 이기심을 통제하기 위해 강력한 사회적 질서와 법이 필수적이다."
+                    )
 
                 st.session_state.messages.append({
                     "type": "summary",
