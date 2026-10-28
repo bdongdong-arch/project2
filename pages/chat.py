@@ -8,7 +8,7 @@ import streamlit as st
 # 페이지 기본 설정
 st.set_page_config(page_title="🏛️ AI 철학자 아고라 카톡방", page_icon="🏛️", layout="centered")
 
-# 카카오톡 스타일 Custom CSS
+# 카카오톡 스타일 Custom CSS (상단 고정바 관련 스타일만 제거)
 st.markdown("""
 <style>
     .stApp {
@@ -19,62 +19,6 @@ st.markdown("""
         padding-top: 1rem;
         padding-bottom: 3rem;
         max-width: 600px;
-    }
-    
-    /* 상단 고정 공지 바 컨테이너 */
-    .sticky-notice-container {
-        position: sticky;
-        top: 0;
-        z-index: 999;
-        background-color: #BACEE0;
-        padding-bottom: 10px;
-    }
-
-    /* 카카오톡 상단 공지 바 스타일 */
-    .kakao-notice-bar {
-        background-color: #FFFFFF;
-        border-radius: 10px;
-        padding: 12px 16px;
-        box-shadow: 0 2px 5px rgba(0,0,0,0.15);
-        font-size: 0.95rem;
-        color: #333333;
-    }
-    .kakao-notice-top-row {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-    }
-    .kakao-notice-left {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        font-weight: 500;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-    }
-    
-    .kakao-notice-buttons {
-        display: flex;
-        border-top: 1px solid #EAEAEA;
-        margin-top: 10px;
-        padding-top: 8px;
-    }
-    .kakao-notice-btn {
-        flex: 1;
-        text-align: center;
-        font-size: 0.85rem;
-        color: #555555;
-        padding: 6px;
-        border-radius: 4px;
-        cursor: pointer;
-        transition: background-color 0.2s, color 0.2s;
-        text-decoration: none;
-    }
-    .kakao-notice-btn:hover {
-        background-color: #F0F2F5;
-        color: #000000;
-        font-weight: bold;
     }
 
     .kakaotalk-notice {
@@ -222,10 +166,6 @@ if "current_topic" not in st.session_state:
     st.session_state.current_topic = ""
 if "step_count" not in st.session_state:
     st.session_state.step_count = 0
-if "show_notice_bar" not in st.session_state:
-    st.session_state.show_notice_bar = False
-if "notice_expanded" not in st.session_state:
-    st.session_state.notice_expanded = False
 if "waiting_for_tikitaka_choice" not in st.session_state:
     st.session_state.waiting_for_tikitaka_choice = False
 
@@ -238,8 +178,6 @@ if st.button("💬 채팅방 입장 및 토론 시작"):
         st.session_state.current_topic = topic
         st.session_state.discussion_active = True
         st.session_state.step_count = 0
-        st.session_state.show_notice_bar = False
-        st.session_state.notice_expanded = False
         st.session_state.waiting_for_tikitaka_choice = False
         st.rerun()
     else:
@@ -247,43 +185,6 @@ if st.button("💬 채팅방 입장 및 토론 시작"):
 
 # 6. 카카오톡 대화방 화면 렌더링
 if st.session_state.discussion_active:
-    
-    # 상단 고정 공지 바
-    if st.session_state.show_notice_bar:
-        arrow_icon = "▲" if st.session_state.notice_expanded else "▼"
-        
-        st.markdown('<div class="sticky-notice-container">', unsafe_allow_html=True)
-        
-        col_n1, col_n2 = st.columns([0.92, 0.08])
-        with col_n1:
-            expanded_html = ""
-            if st.session_state.notice_expanded:
-                expanded_html = """
-                <div class="kakao-notice-buttons">
-                    <div class="kakao-notice-btn">다시 열지 않음</div>
-                    <div style="border-left: 1px solid #EAEAEA; height: 16px; align-self: center; margin: 0 4px;"></div>
-                    <div class="kakao-notice-btn">접어두기</div>
-                </div>
-                """
-            
-            st.markdown(f"""
-            <div class="kakao-notice-bar">
-                <div class="kakao-notice-top-row">
-                    <div class="kakao-notice-left">
-                        <span style="font-size: 1.1rem;">📢</span> 
-                        <span style="font-weight: bold; color: #111111;">철학자들의 티키타카를 더 들을지 확인해보세요!</span>
-                    </div>
-                </div>
-                {expanded_html}
-            </div>
-            """, unsafe_allow_html=True)
-            
-        with col_n2:
-            if st.button(arrow_icon, key="toggle_notice_arrow", use_container_width=True):
-                st.session_state.notice_expanded = not st.session_state.notice_expanded
-                st.rerun()
-                
-        st.markdown('</div>', unsafe_allow_html=True)
 
     st.markdown(f'<div class="kakaotalk-notice">📌 [토론 주제] {st.session_state.current_topic}</div>', unsafe_allow_html=True)
 
@@ -328,7 +229,7 @@ if st.session_state.discussion_active:
             """, unsafe_allow_html=True)
             
             with st.container():
-                if st.button("📋 글 확인하기 (상단 공지로 이동)", key=f"go_to_notice_{idx_msg}", use_container_width=True):
+                if st.button("📋 글 확인하기 (상단으로 이동)", key=f"go_to_notice_{idx_msg}", use_container_width=True):
                     st.markdown("""
                         <script>
                             const topElement = document.getElementById('top-anchor');
@@ -465,8 +366,6 @@ if st.session_state.discussion_active:
                 st.session_state.step_count += 1
                 
                 if st.session_state.step_count >= 7:
-                    st.session_state.show_notice_bar = True
-                    st.session_state.notice_expanded = False
                     st.session_state.messages.append({
                         "type": "notice_card"
                     })
@@ -474,7 +373,7 @@ if st.session_state.discussion_active:
 
                 st.rerun()
 
-            # 사회자 최종 요약 카드 생성 (간소화된 관점 1문장 생성 및 색상 적용)
+            # 사회자 최종 요약 카드 생성
             else:
                 summary_prompt = (
                     f"토론 주제: {st.session_state.current_topic}\n"
@@ -517,7 +416,5 @@ if st.session_state.discussion_active:
             st.session_state.messages = []
             st.session_state.discussion_active = False
             st.session_state.step_count = 0
-            st.session_state.show_notice_bar = False
-            st.session_state.notice_expanded = False
             st.session_state.waiting_for_tikitaka_choice = False
             st.rerun()
