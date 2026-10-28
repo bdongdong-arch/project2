@@ -116,37 +116,37 @@ client = OpenAI(
     base_url="https://generativelanguage.googleapis.com/v1beta/openai/",
 )
 
-# 3. 5인 철학자 페르소나 정의 (철학자별 고유 색상 및 이름 호칭 규칙 부여)
+# 3. 5인 철학자 페르소나 정의
 PHILOSOPHERS = {
     "니체": {
         "icon": "⚡",
-        "color": "#D32F2F", # 강렬한 빨강
+        "color": "#D32F2F",
         "description": "기존 도덕을 깨부수고 스스로 가치를 만들라는 사상가",
-        "prompt": "너는 프레드리히 니체다. 고등학생도 이해하기 쉽게 쉬운 단어로 대답해라. 상대방을 부를 때 '네'라는 호칭을 남발하지 말고, 상대방의 이름(소크라테스, 장자, 칸트, 홉스 중 한 명)을 자연스럽게 언급하며 그 주장을 예리하게 반박해라. 반드시 순수 한국어로만 1~2문장으로 답해라."
+        "prompt": "너는 프레드리히 니체다. 고등학생도 이해하기 쉽게 쉬운 단어로 대답해라. 상대방을 부를 때 '네'라는 호칭을 남발하지 말고, 상대방의 이름을 언급하며 그 주장을 예리하게 반박해라. 반드시 순수 한국어로만 답해라."
     },
     "소크라테스": {
         "icon": "🦉",
-        "color": "#1976D2", # 신중한 파랑
+        "color": "#1976D2",
         "description": "질문을 통해 자신의 무지를 깨닫게 하는 철학자",
-        "prompt": "너는 소크라테스다. 고등학생도 이해하기 쉽게 쉬운 단어로 대답해라. '네'라는 호칭은 최소화하고, 반박할 상대의 이름(니체, 장자, 칸트, 홉스 중 한 명)을 직접 부르며 날카로운 질문이나 반문을 던져라. 반드시 순수 한국어로만 1~2문장으로 답해라."
+        "prompt": "너는 소크라테스다. 고등학생도 이해하기 쉽게 쉬운 단어로 대답해라. '네'라는 호칭은 최소화하고, 반박할 상대의 이름을 직접 부르며 날카로운 질문이나 반문을 던져라. 반드시 순수 한국어로만 답해라."
     },
     "장자": {
         "icon": "🦋",
-        "color": "#388E3C", # 자연의 초록
+        "color": "#388E3C",
         "description": "자연의 흐름에 맡기고 억지로 하지 말라는 도인",
-        "prompt": "너는 장자다. 고등학생도 이해하기 쉽게 쉬운 단어로 대답해라. '네'라는 호칭 대신 상대방의 이름(니체, 소크라테스, 칸트, 홉스 중 한 명)을 언급하며 억지스러운 주장을 재치 있게 받아쳐라. 반드시 순수 한국어로만 1~2문장으로 답해라."
+        "prompt": "너는 장자다. 고등학생도 이해하기 쉽게 쉬운 단어로 대답해라. '네'라는 호칭 대신 상대방의 이름을 언급하며 억지스러운 주장을 재치 있게 받아쳐라. 반드시 순수 한국어로만 답해라."
     },
     "칸트": {
         "icon": "🕰️",
-        "color": "#7B1FA2", # 원칙의 보라
+        "color": "#7B1FA2",
         "description": "누구나 지켜야 할 보편적인 도덕 원칙을 강조하는 원칙주의자",
-        "prompt": "너는 이마누엘 칸트다. 고등학생도 쉽게 대답해라. '네'라는 호칭을 자제하고, 상대방의 이름(니체, 소크라테스, 장자, 홉스 중 한 명)을 부르며 도덕적 의무와 원칙을 저버렸다고 단호하게 반박해라. 반드시 순수 한국어로만 1~2문장으로 답해라."
+        "prompt": "너는 이마누엘 칸트다. 고등학생도 쉽게 대답해라. '네'라는 호칭을 자제하고, 상대방의 이름을 부르며 도덕적 의무와 원칙을 저버렸다고 단호하게 반박해라. 반드시 순수 한국어로만 답해라."
     },
     "홉스": {
         "icon": "🦁",
-        "color": "#E65100", # 현실의 주황
+        "color": "#E65100",
         "description": "인간의 이기심을 막기 위해 강력한 법과 질서가 필요하다는 현실주의자",
-        "prompt": "너는 토마스 홉스다. 고등학생 수준에 맞춰 대답해라. '네'라는 호칭보다는 상대방의 이름(니체, 소크라테스, 장자, 칸트 중 한 명)을 직접 언급하며 현실성 없는 공상이라 팩트를 짚어 반박해라. 반드시 순수 한국어로만 1~2문장으로 답해라."
+        "prompt": "너는 토마스 홉스다. 고등학생 수준에 맞춰 대답해라. '네'라는 호칭보다는 상대방의 이름을 직접 언급하며 현실성 없는 공상이라 팩트를 짚어 반박해라. 반드시 순수 한국어로만 답해라."
     }
 }
 
@@ -313,28 +313,28 @@ if st.session_state.discussion_active:
                         "icon": info["icon"],
                         "color": info["color"],
                         "lines": sentences,
-                        "time": now_time
+                        "time": time_str if 'time_str' in locals() else now_time
                     })
                 
                 st.session_state.step_count += 1
                 st.rerun()
 
-            # 난상토론 단계 (동시 발언 허용하되, 각 철학자가 직전에 한 말과 유사한 주장 반복 금지)
+            # 난상토론 단계 (한 철학자가 여러 공격을 받았을 때 종합하여 한 번에 간결하게 반박하도록 유도)
             elif current_step < MAX_STEPS - 1:
+                # 무작위로 발언할 철학자 2~3명 선택
                 selected_speakers = []
                 temp_pool = list(PHILOSOPHERS.keys())
                 random.shuffle(temp_pool)
                 for s in temp_pool:
                     if s not in selected_speakers:
                         selected_speakers.append(s)
-                    if len(selected_speakers) >= 3:
+                    if len(selected_speakers) >= random.randint(2, 3):
                         break
 
                 temp_history = list(flat_history)
                 for name in selected_speakers:
                     info = PHILOSOPHERS[name]
                     
-                    # 해당 철학자가 직전에 했던 발언들을 모아둠
                     previous_statements = [m['lines'] for m in st.session_state.messages if m['type'] == 'chat' and m['speaker'] == name]
                     last_statement_str = " ".join(previous_statements[-1]) if previous_statements else "없음"
 
@@ -343,7 +343,7 @@ if st.session_state.discussion_active:
                         f"[토론 주제] {st.session_state.current_topic}\n\n"
                         f"[지금까지의 대화 흐름]\n" + ("\n".join(temp_history)) +
                         f"\n\n[주의사항 - 중요!]: 너({name})가 직전에 했던 발언 내용: \"{last_statement_str}\"\n"
-                        f"지침: 위에서 네가 방금 했던 말과 똑같거나 비슷한 의미/표현의 주장을 절대 다시 반복하지 마라! 반드시 새로운 논거를 대거나, 다른 각도에서 상대방의 최신 주장을 예리하게 반박하는 1~2문장을 작성해라."
+                        f"지침: 직전에 네가 했던 말을 단순 반복하지 말고, 최근에 너를 공격한 상대들의 주장에 대해 **각각의 반론을 하나의 말풍선 안에서 짧고 간결하게(총 2문장 이내로)** 요약하여 명쾌하게 받아쳐라. 절대 길게 쓰지 말고 핵심만 짚어라."
                     )
                     try:
                         res = client.chat.completions.create(
@@ -360,6 +360,9 @@ if st.session_state.discussion_active:
                     if not sentences:
                         continue
 
+                    # 너무 길 경우 최대 2문장까지만 허용하여 말풍선 비대화 방지
+                    sentences = sentences[:2]
+
                     st.session_state.messages.append({
                         "type": "chat",
                         "speaker": name,
@@ -368,7 +371,7 @@ if st.session_state.discussion_active:
                         "lines": sentences,
                         "time": now_time
                     })
-                    temp_history.append(f"{name}: {text}")
+                    temp_history.append(f"{name}: {' '.join(sentences)}")
 
                 st.session_state.step_count += 1
                 
