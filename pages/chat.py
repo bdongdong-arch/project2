@@ -116,7 +116,7 @@ client = OpenAI(
     base_url="https://generativelanguage.googleapis.com/v1beta/openai/",
 )
 
-# 3. 5인 철학자 페르소나 정의 (니체 페르소나 반영)
+# 3. 5인 철학자 페르소나 정의 (소크라테스 및 니체 반영)
 PHILOSOPHERS = {
     "니체": {
         "icon": "⚡",
@@ -136,26 +136,35 @@ PHILOSOPHERS = {
     "소크라테스": {
         "icon": "🦉",
         "color": "#1976D2",
-        "description": "질문을 통해 자신의 무지를 깨닫게 하는 철학자",
-        "prompt": "너는 소크라테스다. 상대방의 주장에 대해 '네가 아는 진실이 정말 참인지' 본질을 파고드는 날카로운 반문과 비판을 던져라. '하지만 묻겠다' 같은 미완성 문장으로 끝내지 말고, 상대방의 이름을 부르며 구체적인 모순을 지적하는 완성된 2~3문장을 한 번에 말해라. 고등학생 눈높이에 맞춰 쉬운 단어로 답해라. 순수 한국어로만 답해라."
+        "description": "질문을 통해 자신의 무지를 겸손하게 탐구하는 철학자",
+        "prompt": (
+            "너는 고대 그리스의 철학자 소크라테스다.\n"
+            "[성격 및 말투 지침]\n"
+            "- 세속적 부나 명예에 연연하지 않고 소탈하게 살아가며, 자신의 무지를 겸손하게 인정하는 태도를 지녔다.\n"
+            "- 자신이 모든 것을 알고 있다고 주장하기보다 대화를 통해 함께 진리를 탐구하며, 상대에게 생각을 강요하지 않는다.\n"
+            "- 고풍스럽고 차분한 분위기를 지니며, 이름을 부르거나 '그대'나 '친구여' 같은 호칭을 쓰고 '~하는가', '~일세', '~하지 않겠는가' 같은 표현을 자연스럽게 사용하라.\n"
+            "- 질문을 많이 던지되 공격적이거나 권위적이지 않으며, 하나의 질문에서 또 다른 질문을 만들어 상대의 생각을 깊이 파고들어라.\n"
+            "- 문장을 중간에 끊지 말고 완성된 2~3문장으로 답해라.\n"
+            "- 반드시 순수 한국어로만 답해라."
+        )
     },
     "장자": {
         "icon": "🦋",
         "color": "#388E3C",
         "description": "자연의 흐름에 맡기고 억지로 하지 말라는 도인",
-        "prompt": "너는 장자다. 인간이 억지로 규율을 만들고 아귀다툼하는 것을 비판하며, 자연의 흐름에 맡기고 초연하게 살아야 한다는 도가적 입장을 펼쳐라. 고등학생 눈높이에서 상대방의 이름을 부르며 억지스러운 주장을 재치 있게 받아쳐라. 문장을 중간에 끊지 말고 완성된 2~3문장으로 답해라. 순수 한국어로만 답해라."
+        "prompt": "너는 장자다. 인간이 억지로 규율을 만들고 아귀다툼하는 것을 비판하며, 자연의 흐름에 맡기고 초연하게 살아야 한다는 도가적 입장을 펼쳐라. 고등학생 눈높이에서 상대방의 이름을 부르며 억지스러운 주장을 재치 있게 받아쳐라. 문장을 중간에 끊지 말고 완성된 2~3문장으로 답해라. 반드시 순수 한국어로만 답해라."
     },
     "칸트": {
         "icon": "🕰️",
         "color": "#7B1FA2",
         "description": "누구나 지켜야 할 보편적인 도덕 원칙을 강조하는 원칙주의자",
-        "prompt": "너는 이마누엘 칸트다. 감정이나 상황에 휘둘리지 않고 누구나 지켜야 할 보편적 도덕 법칙과 의무를 강조해라. 고등학생 눈높이에서 상대방의 이름을 부르며 원칙을 저버린 태도를 단호하게 비판해라. 문장을 중간에 끊지 말고 완성된 2~3문장으로 답해라. 순수 한국어로만 답해라."
+        "prompt": "너는 이마누엘 칸트다. 감정이나 상황에 휘둘리지 않고 누구나 지켜야 할 보편적 도덕 법칙과 의무를 강조해라. 고등학생 눈높이에서 상대방의 이름을 부르며 원칙을 저버린 태도를 단호하게 비판해라. 문장을 중간에 끊지 말고 완성된 2~3문장으로 답해라. 반드시 순수 한국어로만 답해라."
     },
     "홉스": {
         "icon": "🦁",
         "color": "#E65100",
         "description": "인간의 이기심을 막기 위해 강력한 법과 질서가 필요하다는 현실주의자",
-        "prompt": "너는 토마스 홉스다. 인간은 본래 이기적이므로 강력한 법과 국가의 질서가 없으면 투쟁이 벌어진다는 현실주의적 입장을 고수해라. 고등학생 눈높이에서 상대방의 이름을 부르며 뜬구름 잡는 소리라고 팩트를 짚어 반박해라. 문장을 중간에 끊지 말고 완성된 2~3문장으로 답해라. 순수 한국어로만 답해라."
+        "prompt": "너는 토마스 홉스다. 인간은 본래 이기적이므로 강력한 법과 국가의 질서가 없으면 투쟁이 벌어진다는 현실주의적 입장을 고수해라. 고등학생 눈높이에서 상대방의 이름을 부르며 뜬구름 잡는 소리라고 팩트를 짚어 반박해라. 문장을 중간에 끊지 말고 완성된 2~3문장으로 답해라. 반드시 순수 한국어로만 답해라."
     }
 }
 
@@ -264,159 +273,4 @@ if st.session_state.discussion_active:
             spinner_msg = f"🔥 톡으로 서로를 의식하며 티키타카 수다를 떠는 중... ({current_step}/{MAX_STEPS-2})"
 
         with st.spinner(spinner_msg):
-            time.sleep(0.8)
-            
-            flat_history = []
-            for m in st.session_state.messages:
-                if m['type'] == 'chat':
-                    flat_history.append(f"{m['speaker']}: {' '.join(m['lines'])}")
-
-            # 1단계: 초반 입론
-            if current_step == 0:
-                for name, info in PHILOSOPHERS.items():
-                    intro_content = (
-                        f"너는 {name}이다. {info['description']}\n\n"
-                        f"[토론 주제] {st.session_state.current_topic}\n\n"
-                        f"지침: 이 토론 주제에 대해 다른 사상가의 이름이나 주장을 언급하지 말고, 오직 너 자신의 철학적 관점에 입각해 본인의 생각과 주장을 1~2줄(1~2문장)로 진중하게 밝혀라. 고등학생이 직관적으로 이해할 수 있는 쉬운 어휘를 써라."
-                    )
-                    try:
-                        res = client.chat.completions.create(
-                            model="gemini-3.5-flash-lite",
-                            messages=[{"role": "user", "content": intro_content}],
-                        )
-                        text = res.choices[0].message.content.strip()
-                        if not text:
-                            continue
-                    except Exception:
-                        continue
-                    
-                    sentences = [s.strip() for s in text.replace('!', '!|').replace('?', '?|').replace('.', '.|').split('|') if s.strip()]
-                    if not sentences:
-                        continue
-
-                    st.session_state.messages.append({
-                        "type": "chat",
-                        "speaker": name,
-                        "icon": info["icon"],
-                        "color": info["color"],
-                        "lines": sentences[:2],
-                        "time": now_time
-                    })
-                
-                st.session_state.step_count += 1
-                st.rerun()
-
-            # 난상토론 단계
-            elif current_step < MAX_STEPS - 1:
-                recent_messages = [m for m in st.session_state.messages if m['type'] == 'chat']
-                attacked_counts = {name: 0 for name in PHILOSOPHERS.keys()}
-                
-                for m in recent_messages[-4:]:
-                    msg_text = " ".join(m['lines'])
-                    for name in PHILOSOPHERS.keys():
-                        if name in msg_text and m['speaker'] != name:
-                            attacked_counts[name] += 1
-
-                sorted_targets = sorted(attacked_counts.items(), key=lambda x: x[1], reverse=True)
-                target_speaker = sorted_targets[0][0] if sorted_targets[0][1] > 0 else random.choice(list(PHILOSOPHERS.keys()))
-                
-                speakers_to_act = [target_speaker]
-                other_philos = [n for n in PHILOSOPHERS.keys() if n != target_speaker]
-                random.shuffle(other_philos)
-                speakers_to_act.extend(other_philos[:random.randint(1, 2)])
-                random.shuffle(speakers_to_act)
-
-                temp_history = list(flat_history)
-                for name in speakers_to_act:
-                    info = PHILOSOPHERS[name]
-                    
-                    previous_statements = [m['lines'] for m in st.session_state.messages if m['type'] == 'chat' and m['speaker'] == name]
-                    last_statement_str = " ".join(previous_statements[-1]) if previous_statements else "없음"
-
-                    debate_content = (
-                        f"{info['prompt']}\n\n"
-                        f"[토론 주제] {st.session_state.current_topic}\n\n"
-                        f"[지금까지의 대화 흐름]\n" + ("\n".join(temp_history)) +
-                        f"\n\n[주의사항 - 절대 중복 금지 및 분량 제한]: 네가 직전에 한 말: \"{last_statement_str}\"\n"
-                        f"지침: 뻔한 말을 반복하지 말고, 상대방의 주장에 대해 일부분 수용하면서도 본인의 철학으로 예리하게 반박해라. **반드시 문장을 끝까지 완성하여 2~3줄(2~3문장 이내)로** 간결하게 작성해라."
-                    )
-
-                    try:
-                        res = client.chat.completions.create(
-                            model="gemini-3.5-flash-lite",
-                            messages=[{"role": "user", "content": debate_content}],
-                        )
-                        text = res.choices[0].message.content.strip()
-                        if not text:
-                            continue
-                    except Exception:
-                        continue
-                    
-                    sentences = [s.strip() for s in text.replace('!', '!|').replace('?', '?|').replace('.', '.|').split('|') if s.strip()]
-                    if not sentences:
-                        continue
-
-                    sentences = sentences[:3]
-
-                    st.session_state.messages.append({
-                        "type": "chat",
-                        "speaker": name,
-                        "icon": info["icon"],
-                        "color": info["color"],
-                        "lines": sentences,
-                        "time": now_time
-                    })
-                    temp_history.append(f"{name}: {' '.join(sentences)}")
-
-                st.session_state.step_count += 1
-                
-                if st.session_state.step_count >= 7:
-                    st.session_state.waiting_for_tikitaka_choice = True
-
-                st.rerun()
-
-            # 사회자 최종 요약 카드 생성
-            else:
-                summary_prompt = (
-                    f"토론 주제: {st.session_state.current_topic}\n"
-                    f"지침: 사회자로서 이번 주제('{st.session_state.current_topic}')에 대해 니체, 소크라테스, 장자, 칸트, 홉스가 각각 어떤 고유한 관점과 주장을 펼쳤으며, 어디에서 접점을 찾고 어디에서 평행선을 달렸는지 고등학생 눈높이에 맞춰 마크다운 형식으로 작성해 주세요.\n"
-                    "반드시 아래 형식으로만 작성하고, 각 철학자 이름 부분에 HTML 스타일 색상을 적용하여 가독성을 높여주세요:\n"
-                    f"### 📊 [사회자] '{st.session_state.current_topic}'에 대한 철학자별 핵심 주장\n"
-                    f"- **⚡ <span style='color: {PHILOSOPHERS['니체']['color']};'>니체</span>**: (주제에 맞는 니체 관점 1문장)\n"
-                    f"- **🦉 <span style='color: {PHILOSOPHERS['소크라테스']['color']};'>소크라테스</span>**: (주제에 맞는 소크라테스 관점 1문장)\n"
-                    f"- **🦋 <span style='color: {PHILOSOPHERS['장자']['color']};'>장자</span>**: (주제에 맞는 장자 관점 1문장)\n"
-                    f"- **🕰️ <span style='color: {PHILOSOPHERS['칸트']['color']};'>칸트</span>**: (주제에 맞는 칸트 관점 1문장)\n"
-                    f"- **🦁 <span style='color: {PHILOSOPHERS['홉스']['color']};'>홉스</span>**: (주제에 맞는 홉스 관점 1문장)"
-                )
-                try:
-                    res = client.chat.completions.create(
-                        model="gemini-3.5-flash-lite",
-                        messages=[{"role": "user", "content": summary_prompt}],
-                    )
-                    summary_text = res.choices[0].message.content.strip()
-                except Exception:
-                    summary_text = (
-                        f"### 📊 [사회자] '{st.session_state.current_topic}'에 대한 철학자별 핵심 주장\n"
-                        f"- **⚡ <span style='color: {PHILOSOPHERS['니체']['color']};'>니체</span>**: 기존의 뻔한 틀을 깨부수고 스스로의 가치를 창조해야 한다.\n"
-                        f"- **🦉 <span style='color: {PHILOSOPHERS['소크라테스']['color']};'>소크라테스</span>**: 네가 아는 것이 정말 진실인지 끊임없이 질문하고 무지를 깨달아야 한다.\n"
-                        f"- **🦋 <span style='color: {PHILOSOPHERS['장자']['color']};'>장자</span>**: 억지로 무언가 하려 하지 말고 자연의 흐름에 그대로 몸을 맡겨야 한다.\n"
-                        f"- **🕰️ <span style='color: {PHILOSOPHERS['칸트']['color']};'>칸트</span>**: 상황이 어떻든 보편적인 도덕 법칙과 의무를 엄격하게 지켜야 한다.\n"
-                        f"- **🦁 <span style='color: {PHILOSOPHERS['홉스']['color']};'>홉스</span>**: 인간의 이기심을 통제하기 위해 강력한 사회적 질서와 법이 필수적이다."
-                    )
-
-                st.session_state.messages.append({
-                    "type": "summary",
-                    "content": summary_text
-                })
-
-            st.session_state.step_count += 1
-            st.rerun()
-
-    else:
-        st.success("🎉 아고라 광장의 열띤 토론이 모두 종료되었습니다!")
-        if st.button("🔄 새로운 주제로 대화하기"):
-            st.session_state.messages = []
-            st.session_state.discussion_active = False
-            st.session_state.step_count = 0
-            st.session_state.waiting_for_tikitaka_choice = False
-            st.rerun()
+            time.
