@@ -327,13 +327,13 @@ if st.session_state.discussion_active:
                         sentences.append(rl)
                 return sentences[:max_sentences]
 
-            # 1단계: 초반 입론 (딱 1~2문장으로 짧게)
+            # 1단계: 초반 입론 (주장 및 결론을 굵은 글씨로 강조하도록 지침 추가)
             if current_step == 0:
                 for name, info in PHILOSOPHERS.items():
                     intro_content = (
                         f"{info['prompt']}\n\n"
                         f"[토론 주제] {st.session_state.current_topic}\n\n"
-                        f"지침: 이 토론 주제에 대해 다른 사상가의 이름이나 주장을 언급하지 말고, 오직 너 자신의 철학적 관점에 입각해 고등학생이 이해하기 쉬운 어휘로 **딱 1~2문장**만 짧게 밝혀라."
+                        f"지침: 이 토론 주제에 대해 다른 사상가의 이름이나 주장을 언급하지 말고, 오직 너 자신의 철학적 관점에 입각해 고등학생이 이해하기 쉬운 어휘로 딱 1~2문장만 짧게 밝혀라. 특히 토론 주제에 대한 **본인의 주장 및 결론 부분은 반드시 굵은 두께의 글씨(`**결론**`)로 강조**하여 작성해라."
                     )
                     try:
                         res = client.chat.completions.create(
@@ -401,9 +401,8 @@ if st.session_state.discussion_active:
                     previous_statements = [m['lines'] for m in st.session_state.messages if m['type'] == 'chat' and m['speaker'] == name]
                     last_statement_str = " ".join(previous_statements[-1]) if previous_statements else "없음"
 
-                    # 만약 현재 발언자가 지목당한 상태이고 공격자가 여러 명이라면, 각각의 공격자에 대해 개별 말풍선 생성
                     if name == target_speaker and len(attackers) > 1:
-                        for atk in attackers[:2]: # 최대 2명까지 각각 개별 반박
+                        for atk in attackers[:2]:
                             individual_debate_content = (
                                 f"{info['prompt']}\n\n"
                                 f"[토론 주제] {st.session_state.current_topic}\n\n"
