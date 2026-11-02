@@ -116,7 +116,7 @@ client = OpenAI(
     base_url="https://generativelanguage.googleapis.com/v1beta/openai/",
 )
 
-# 3. 5인 철학자 페르소나 정의 (칸트 신규 지침 반영)
+# 3. 5인 철학자 페르소나 정의 (홉스 신규 지침 반영)
 PHILOSOPHERS = {
     "니체": {
         "icon": "⚡",
@@ -170,10 +170,8 @@ PHILOSOPHERS = {
         "prompt": (
             "너는 18세기 독일의 철학자 이마누엘 칸트다.\n"
             "[성격 및 말투 지침]\n"
-            "- 철저한 규칙성과 신중함을 지니고 있어 생활을 규칙적으로 관리하며 예상치 못한 변화를 불편해하고, 결정을 내릴 때도 충분히 깊이 생각한다.\n"
-            "- 그러나 이러한 엄격함과 달리 실제 인간관계에서는 친절하고 사교적이며 대화를 즐기고 건조한 유머를 구사한다.\n"
-            "- 철학적·도덕적 문제를 다룰 때에는 매우 엄격하고 논리적인 태도로 돌변하여, 감정이나 이익보다 '정언명령'과 보편적 도덕 법칙, 인간을 수단이 아닌 목적으로 대하는 원칙을 강조한다.\n"
-            "- '그대', '~하지 않겠습니까' 등의 품위 있는 존댓말을 쓰며, 평소의 사교적인 모습과 철학적 엄격함의 대비를 살려 대화해라.\n"
+            "- 철학적·도덕적 문제를 다룰 때에는 매우 엄격하고 논리적인 태도로, 감정이나 이익보다 '정언명령'과 보편적 도덕 법칙, 인간을 수단이 아닌 목적으로 대하는 원칙을 강조한다.\n"
+            "- '그대', '~하지 않겠습니까' 등의 품위 있는 존댓말을 쓰며 대화해라.\n"
             "- 줄바꿈을 통해 논리 전개가 한눈에 들어오도록 줄바꿈 포함 전체 1~4문장으로 단호하게 결론을 내려라.\n"
             "- 실제 대화하는 형식으로 상대방의 이름을 불러가며 답해라.\n"
             "- 반드시 순수 한국어로만 답변해라."
@@ -182,8 +180,17 @@ PHILOSOPHERS = {
     "홉스": {
         "icon": "🦁",
         "color": "#E65100",
-        "description": "인간의 이기심을 막기 위해 강력한 법과 질서가 필요하다는 현실주의자",
-        "prompt": "너는 토마스 홉스다. 인간은 본래 이기적이므로 강력한 법과 국가의 질서가 없으면 투쟁이 벌어진다는 현실주의적 입장을 고수해라. 고등학생 눈높이에서 상대방의 이름을 부르며 뜬구름 잡는 소리라고 팩트를 짚어 반박해라. 문장을 중간에 끊지 말고 완성된 2~3문장으로 답해라. 반드시 순수 한국어로만 답해라."
+        "description": "강력한 국가와 법의 필요성을 주장하는 영국의 현실주의 철학자",
+        "prompt": (
+            "너는 영국의 철학자 토마스 홉스다.\n"
+            "[성격 및 말투 지침]\n"
+            "- 고집스럽고 완고하며 자기주장이 강한 성격으로, 자신의 견해를 쉽게 굽히지 않고 논쟁에서 논리를 끝까지 밀고 나가는 비타협적인 태도를 취한다.\n"
+            "- 인간을 자기보존과 이익을 추구하는 이기적인 존재로 보며, 법과 공통의 권력이 없는 자연 상태는 '만인의 만인에 대한 투쟁'일 뿐이므로 강력한 주권과 국가(리바이어던)가 필수적임을 강조한다.\n"
+            "- 감정에 흔들리지 않고 '그것은 지나치게 낙관적인 생각입니다', '그러므로 ~해야 합니다'처럼 냉철하고 직설적이며 권위 있고 단호한 결론을 내려라.\n"
+            "- 줄바꿈을 통해 논리 전개가 한눈에 들어오도록 줄바꿈 포함 전체 1~4문장으로 단호하게 결론을 내려라.\n"
+            "- 실제 대화하는 형식으로 상대방의 이름을 불러가며 답해라.\n"
+            "- 반드시 순수 한국어로만 답해라."
+        )
     }
 }
 
@@ -299,6 +306,13 @@ if st.session_state.discussion_active:
                 if m['type'] == 'chat':
                     flat_history.append(f"{m['speaker']}: {' '.join(m['lines'])}")
 
+            # 텍스트 정제 헬퍼 함수 (시스템 알림 및 단독 괄호 제거)
+            def clean_ai_text(text):
+                import re
+                text = re.sub(r'\[시스템 알림:[^\]]*\]', '', text)
+                lines = [l.strip() for l in text.split('\n') if l.strip() and l.strip() != ']']
+                return lines
+
             # 1단계: 초반 입론
             if current_step == 0:
                 for name, info in PHILOSOPHERS.items():
@@ -318,8 +332,8 @@ if st.session_state.discussion_active:
                     except Exception:
                         continue
                     
-                    sentences = [s.strip() for s in text.replace('!', '!|').replace('?', '?|').replace('.', '.|').split('|') if s.strip()]
-                    if not sentences:
+                    cleaned_lines = clean_ai_text(text)
+                    if not cleaned_lines:
                         continue
 
                     st.session_state.messages.append({
@@ -327,7 +341,7 @@ if st.session_state.discussion_active:
                         "speaker": name,
                         "icon": info["icon"],
                         "color": info["color"],
-                        "lines": sentences[:2],
+                        "lines": cleaned_lines[:2],
                         "time": now_time
                     })
                 
@@ -380,21 +394,21 @@ if st.session_state.discussion_active:
                     except Exception:
                         continue
                     
-                    sentences = [s.strip() for s in text.replace('!', '!|').replace('?', '?|').replace('.', '.|').split('|') if s.strip()]
-                    if not sentences:
+                    cleaned_lines = clean_ai_text(text)
+                    if not cleaned_lines:
                         continue
 
-                    sentences = sentences[:3]
+                    cleaned_lines = cleaned_lines[:3]
 
                     st.session_state.messages.append({
                         "type": "chat",
                         "speaker": name,
                         "icon": info["icon"],
                         "color": info["color"],
-                        "lines": sentences,
+                        "lines": cleaned_lines,
                         "time": now_time
                     })
-                    temp_history.append(f"{name}: {' '.join(sentences)}")
+                    temp_history.append(f"{name}: {' '.join(cleaned_lines)}")
 
                 st.session_state.step_count += 1
                 
