@@ -116,7 +116,7 @@ client = OpenAI(
     base_url="https://generativelanguage.googleapis.com/v1beta/openai/",
 )
 
-# 3. 5인 철학자 페르소나 정의 (요청하신 페르소나 지침 반영 및 고등학생 눈높이/길이 제한 적용)
+# 3. 5인 철학자 페르소나 정의
 PHILOSOPHERS = {
     "니체": {
         "icon": "⚡",
@@ -159,7 +159,6 @@ PHILOSOPHERS = {
             "- 인간이 만든 인위적인 시비선악, 세속적 가치나 규범의 부질없음을 지적하고, 자연의 흐름에 맡기는 '무위자연(無爲自然)'과 만물이 하나라는 '물아일체' 관점에서 논제에 답해라.\n"
             "- 얽매이지 않고 여유로우면서도 뼈가 있는 비유와 해학을 담아 단호하게 자신의 사상을 밝혀라.\n"
             "- 줄바꿈을 통해 논리 전개가 한눈에 들어오도록 전체 1~4문장으로 단호하게 가볍지만 깊이 있게 답해라..\n"
-            "- 실제 대화하는 형식으로 답하라\n"
             "- 고등학생이 이해하기 쉬운 어휘를 사용해라.\n"
             "- 반드시 순수 한국어로만 답변해라."
         )
@@ -176,7 +175,6 @@ PHILOSOPHERS = {
             "- 철학적·도덕적 문제를 다룰 때에는 매우 엄격하고 논리적인 태도로 돌변하여, 감정이나 이익보다 '정언명령'과 보편적 도덕 법칙, 인간을 수단이 아닌 목적으로 대하는 원칙을 강조한다.\n"
             "- '그대', '~하지 않겠습니까' 등의 품위 있는 존댓말을 쓰며, 평소의 사교적인 모습과 철학적 엄격함의 대비를 살려 1~4문장으로 답해라.\n"
             "- 줄바꿈을 통해 논리 전개가 한눈에 들어오도록 줄바꿈 포함 전체 1~4문장으로 단호하게 결론을 내려라.\n"
-            "- 실제 대화하는 형식으로 답하라\n"
             "- 고등학생이 이해하기 쉬운 어휘를 사용해라.\n"
             "- 반드시 순수 한국어로만 답변해라."
         )
@@ -194,7 +192,6 @@ PHILOSOPHERS = {
             "- 고집스럽고 완고하며 자기주장이 강한 성격으로, 자신의 견해를 쉽게 굽히지 않고 논쟁에서 논리를 끝까지 밀고 나가는 비타협적인 태도를 취한다.\n"
             "- 인간을 자기보존과 이익을 추구하는 이기적인 존재로 보며, 법과 공통의 권력이 없는 자연 상태는 '만인의 만인에 대한 투쟁'일 뿐이므로 강력한 주권과 국가(리바이어던)가 필수적임을 강조한다.\n"
             "- 감정에 흔들리지 않고 '그것은 지나치게 낙관적인 생각입니다', '그러므로 ~해야 합니다'처럼 냉철하고 직설적이며 권위 있고 단호한 결론을 내려라.\n"
-            "- 실제 대화하는 형식으로 답하라\n"
             "- 고등학생이 이해하기 쉬운 어휘를 사용해라.\n"
             "- 반드시 순수 한국어로만 답해라."
         )
@@ -365,7 +362,7 @@ if st.session_state.discussion_active:
                 st.session_state.step_count += 1
                 st.rerun()
 
-            # 난상토론 단계 (짧게 반박)
+            # 난상토론 단계 (여러 명에게 지목당한 경우 각각의 반론을 별도 말풍선으로 대응)
             elif current_step < MAX_STEPS - 1:
                 recent_messages = [m for m in st.session_state.messages if m['type'] == 'chat']
                 attacked_counts = {name: 0 for name in PHILOSOPHERS.keys()}
@@ -379,6 +376,18 @@ if st.session_state.discussion_active:
                 sorted_targets = sorted(attacked_counts.items(), key=lambda x: x[1], reverse=True)
                 target_speaker = sorted_targets[0][0] if sorted_targets[0][1] > 0 else random.choice(list(PHILOSOPHERS.keys()))
                 
+                # 공격한 상대(들) 파악하기
+                attackers = []
+                for m in recent_messages[-3:]:
+                    msg_text = " ".join(m['lines'])
+                    if target_speaker in msg_text and m['speaker'] != target_speaker:
+                        if m['speaker'] not in attackers:
+                            attackers.append(m['speaker'])
+                
+                if not attackers:
+                    other_philos = [n for n in PHILOSOPHERS.keys() if n != target_speaker]
+                    attackers = [random.choice(other_philos)]
+
                 speakers_to_act = [target_speaker]
                 other_philos = [n for n in PHILOSOPHERS.keys() if n != target_speaker]
                 random.shuffle(other_philos)
@@ -392,38 +401,72 @@ if st.session_state.discussion_active:
                     previous_statements = [m['lines'] for m in st.session_state.messages if m['type'] == 'chat' and m['speaker'] == name]
                     last_statement_str = " ".join(previous_statements[-1]) if previous_statements else "없음"
 
-                    debate_content = (
-                        f"{info['prompt']}\n\n"
-                        f"[토론 주제] {st.session_state.current_topic}\n\n"
-                        f"[지금까지의 대화 흐름]\n" + ("\n".join(temp_history)) +
-                        f"\n\n[주의사항 - 절대 중복 금지 및 분량 제한]: 네가 직전에 한 말: \"{last_statement_str}\"\n"
-                        f"지침: 고등학생이 이해하기 쉬운 어휘로, 뻔한 말을 반복하지 말고 상대방의 주장에 대해 너의 철학으로 예리하게 반박해라. **반드시 1~2문장으로 아주 짧고 간결하게** 작성해라."
-                    )
+                    # 만약 현재 발언자가 지목당한 상태이고 공격자가 여러 명이라면, 각각의 공격자에 대해 개별 말풍선 생성
+                    if name == target_speaker and len(attackers) > 1:
+                        for atk in attackers[:2]: # 최대 2명까지 각각 개별 반박
+                            individual_debate_content = (
+                                f"{info['prompt']}\n\n"
+                                f"[토론 주제] {st.session_state.current_topic}\n\n"
+                                f"[지금까지의 대화 흐름]\n" + ("\n".join(temp_history)) +
+                                f"\n\n[주의사항 - 개별 반박]: {atk}의 최근 주장에 대해, {name}로서 각각 따로 짧게 1~2문장으로 반박해라. 절대 길게 쓰지 마라."
+                            )
+                            try:
+                                res = client.chat.completions.create(
+                                    model="gemini-3.5-flash-lite",
+                                    messages=[{"role": "user", "content": individual_debate_content}],
+                                )
+                                text = res.choices[0].message.content.strip()
+                                if not text:
+                                    continue
+                            except Exception:
+                                continue
 
-                    try:
-                        res = client.chat.completions.create(
-                            model="gemini-3.5-flash-lite",
-                            messages=[{"role": "user", "content": debate_content}],
+                            cleaned_lines = clean_ai_text(text, max_sentences=2)
+                            if not cleaned_lines:
+                                continue
+
+                            st.session_state.messages.append({
+                                "type": "chat",
+                                "speaker": name,
+                                "icon": info["icon"],
+                                "color": info["color"],
+                                "lines": cleaned_lines,
+                                "time": now_time
+                            })
+                            temp_history.append(f"{name}: {' '.join(cleaned_lines)}")
+                    else:
+                        debate_content = (
+                            f"{info['prompt']}\n\n"
+                            f"[토론 주제] {st.session_state.current_topic}\n\n"
+                            f"[지금까지의 대화 흐름]\n" + ("\n".join(temp_history)) +
+                            f"\n\n[주의사항 - 절대 중복 금지 및 분량 제한]: 네가 직전에 한 말: \"{last_statement_str}\"\n"
+                            f"지침: 고등학생이 이해하기 쉬운 어휘로, 뻔한 말을 반복하지 말고 상대방의 주장에 대해 너의 철학으로 예리하게 반박해라. **반드시 1~2문장으로 아주 짧고 간결하게** 작성해라."
                         )
-                        text = res.choices[0].message.content.strip()
-                        if not text:
-                            continue
-                    except Exception:
-                        continue
-                    
-                    cleaned_lines = clean_ai_text(text, max_sentences=2)
-                    if not cleaned_lines:
-                        continue
 
-                    st.session_state.messages.append({
-                        "type": "chat",
-                        "speaker": name,
-                        "icon": info["icon"],
-                        "color": info["color"],
-                        "lines": cleaned_lines,
-                        "time": now_time
-                    })
-                    temp_history.append(f"{name}: {' '.join(cleaned_lines)}")
+                        try:
+                            res = client.chat.completions.create(
+                                model="gemini-3.5-flash-lite",
+                                messages=[{"role": "user", "content": debate_content}],
+                            )
+                            text = res.choices[0].message.content.strip()
+                            if not text:
+                                continue
+                        except Exception:
+                            continue
+                        
+                        cleaned_lines = clean_ai_text(text, max_sentences=2)
+                        if not cleaned_lines:
+                            continue
+
+                        st.session_state.messages.append({
+                            "type": "chat",
+                            "speaker": name,
+                            "icon": info["icon"],
+                            "color": info["color"],
+                            "lines": cleaned_lines,
+                            "time": now_time
+                        })
+                        temp_history.append(f"{name}: {' '.join(cleaned_lines)}")
 
                 st.session_state.step_count += 1
                 
