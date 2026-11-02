@@ -297,7 +297,7 @@ if st.session_state.discussion_active:
                 st.session_state.step_count += 1
                 st.rerun()
 
-            # 난상토론 단계 (연속 말풍선 간의 내용 중복 엄격 차단)
+            # 난상토론 단계 (부분 수용 및 합의점, 혹은 절대 좁혀지지 않는 시각차 반영)
             elif current_step < MAX_STEPS - 1:
                 recent_messages = [m for m in st.session_state.messages if m['type'] == 'chat']
                 attacked_counts = {name: 0 for name in PHILOSOPHERS.keys()}
@@ -329,16 +329,16 @@ if st.session_state.discussion_active:
                             f"{info['prompt']}\n\n"
                             f"[토론 주제] {st.session_state.current_topic}\n\n"
                             f"[지금까지의 대화 흐름]\n" + ("\n".join(temp_history)) +
-                            f"\n\n[주의사항 - 절대 중복 금지!]: 네가 직전에 한 말: \"{last_statement_str}\"\n"
-                            f"지침: 너를 공격한 상대들의 주장에 대해 방금 했던 말과 **비슷한 단어나 논리를 절대 재탕하지 말고**, 완전히 새로운 논점이나 다른 각도의 반박/질문을 **딱 2개의 짧은 문장**으로 나누어 각각 다른 내용을 담아 답변해라. (첫 번째 문장과 두 번째 문장의 내용이 겹치면 절대 안 됨)"
+                            f"\n\n[주의사항 - 절대 중복 금지 및 태도 변화]: 네가 직전에 한 말: \"{last_statement_str}\"\n"
+                            f"지침: 토론이 깊어짐에 따라 상대방의 말에서 **'어떤 점은 일리가 있다'며 일부를 수용하거나 공감**해주어라. 단, **본인의 핵심 철학적 주장과 원칙만큼은 절대 양보할 수 없는 한계**를 명확히 그으며 2개의 문장으로 균형 있게 답변해라."
                         )
                     else:
                         debate_content = (
                             f"{info['prompt']}\n\n"
                             f"[토론 주제] {st.session_state.current_topic}\n\n"
                             f"[지금까지의 대화 흐름]\n" + ("\n".join(temp_history)) +
-                            f"\n\n[주의사항 - 절대 중복 금지!]: 네가 직전에 한 말: \"{last_statement_str}\"\n"
-                            f"지침: 직전에 네가 했던 말과 유사한 표현이나 주장을 절대 반복하지 말고, 완전히 새로운 각도에서 상대방을 비판하는 1~2문장을 작성해라."
+                            f"\n\n[주의사항 - 절대 중복 금지 및 입장 조율]: 네가 직전에 한 말: \"{last_statement_str}\"\n"
+                            f"지침: 뻔한 비판을 반복하지 말고, 상대방의 주장에서 **수용할 수 있는 부분은 인정하되, '그럼에도 절대 이해할 수 없고 타협 불가한 본질적인 차이'**를 1~2문장으로 예리하게 짚어내며 토론을 전개해라."
                         )
 
                     try:
@@ -356,7 +356,6 @@ if st.session_state.discussion_active:
                     if not sentences:
                         continue
 
-                    # 말풍선이 2개 이상일 때 문장들이 서로 중복되지 않도록 깔끔하게 최대 2문장 배분
                     sentences = sentences[:2]
 
                     st.session_state.messages.append({
@@ -380,7 +379,7 @@ if st.session_state.discussion_active:
             else:
                 summary_prompt = (
                     f"토론 주제: {st.session_state.current_topic}\n"
-                    f"지침: 사회자로서 이번 주제('{st.session_state.current_topic}')에 대해 니체, 소크라테스, 장자, 칸트, 홉스가 각각 어떤 고유한 관점과 주장을 펼칠지 고등학생 눈높이에 맞춰 마크다운 형식으로 작성해 주세요.\n"
+                    f"지침: 사회자로서 이번 주제('{st.session_state.current_topic}')에 대해 니체, 소크라테스, 장자, 칸트, 홉스가 각각 어떤 고유한 관점과 주장을 펼쳤으며, 어디에서 접점을 찾고 어디에서 평행선을 달렸는지 고등학생 눈높이에 맞춰 마크다운 형식으로 작성해 주세요.\n"
                     "반드시 아래 형식으로만 작성하고, 각 철학자 이름 부분에 HTML 스타일 색상을 적용하여 가독성을 높여주세요:\n"
                     f"### 📊 [사회자] '{st.session_state.current_topic}'에 대한 철학자별 핵심 주장\n"
                     f"- **⚡ <span style='color: {PHILOSOPHERS['니체']['color']};'>니체</span>**: (주제에 맞는 니체 관점 1문장)\n"
