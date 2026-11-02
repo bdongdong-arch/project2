@@ -297,9 +297,8 @@ if st.session_state.discussion_active:
                 st.session_state.step_count += 1
                 st.rerun()
 
-            # 난상토론 단계 (지목당한 철학자가 직전의 공격들을 종합하여 반박하도록 제어)
+            # 난상토론 단계 (연속 말풍선 간의 내용 중복 엄격 차단)
             elif current_step < MAX_STEPS - 1:
-                # 최근 대화에서 가장 많이 공격받은(이름이 불린) 철학자를 타겟으로 지정하거나 무작위 선정
                 recent_messages = [m for m in st.session_state.messages if m['type'] == 'chat']
                 attacked_counts = {name: 0 for name in PHILOSOPHERS.keys()}
                 
@@ -309,11 +308,9 @@ if st.session_state.discussion_active:
                         if name in msg_text and m['speaker'] != name:
                             attacked_counts[name] += 1
 
-                # 가장 많이 공격받은 철학자를 우선 선택, 없으면 무작위 선택
                 sorted_targets = sorted(attacked_counts.items(), key=lambda x: x[1], reverse=True)
                 target_speaker = sorted_targets[0][0] if sorted_targets[0][1] > 0 else random.choice(list(PHILOSOPHERS.keys()))
                 
-                # 공격자 1~2명도 함께 발언하도록 구성
                 speakers_to_act = [target_speaker]
                 other_philos = [n for n in PHILOSOPHERS.keys() if n != target_speaker]
                 random.shuffle(other_philos)
@@ -328,21 +325,20 @@ if st.session_state.discussion_active:
                     last_statement_str = " ".join(previous_statements[-1]) if previous_statements else "없음"
 
                     if name == target_speaker:
-                        # 타겟이 된 철학자는 자신을 공격한 여러 내용들을 종합해서 한 번에 반박
                         debate_content = (
                             f"{info['prompt']}\n\n"
                             f"[토론 주제] {st.session_state.current_topic}\n\n"
                             f"[지금까지의 대화 흐름]\n" + ("\n".join(temp_history)) +
-                            f"\n\n[상황 안내]: 방금 다른 철학자들이 너({name})를 집중적으로 공격하거나 지목했다.\n"
-                            f"지침: 너를 공격한 상대들의 주장에 대해, 각각의 비판을 **하나의 말풍선 안에서 (최대 2~3문장 이내로) 깔끔하게 종합하여 단호하게 받아쳐라.** 횡설수설하지 말고 핵심만 요약해서 반박해라."
+                            f"\n\n[주의사항 - 절대 중복 금지!]: 네가 직전에 한 말: \"{last_statement_str}\"\n"
+                            f"지침: 너를 공격한 상대들의 주장에 대해 방금 했던 말과 **비슷한 단어나 논리를 절대 재탕하지 말고**, 완전히 새로운 논점이나 다른 각도의 반박/질문을 **딱 2개의 짧은 문장**으로 나누어 각각 다른 내용을 담아 답변해라. (첫 번째 문장과 두 번째 문장의 내용이 겹치면 절대 안 됨)"
                         )
                     else:
                         debate_content = (
                             f"{info['prompt']}\n\n"
                             f"[토론 주제] {st.session_state.current_topic}\n\n"
                             f"[지금까지의 대화 흐름]\n" + ("\n".join(temp_history)) +
-                            f"\n\n[주의사항 - 중요!]: 너({name})가 직전에 했던 발언 내용: \"{last_statement_str}\"\n"
-                            f"지침: 직전에 네가 했던 말을 단순 반복하지 말고, 다른 철학자의 주장에 대해 새로운 각도에서 1~2문장으로 날카롭게 반박해라."
+                            f"\n\n[주의사항 - 절대 중복 금지!]: 네가 직전에 한 말: \"{last_statement_str}\"\n"
+                            f"지침: 직전에 네가 했던 말과 유사한 표현이나 주장을 절대 반복하지 말고, 완전히 새로운 각도에서 상대방을 비판하는 1~2문장을 작성해라."
                         )
 
                     try:
@@ -360,10 +356,8 @@ if st.session_state.discussion_active:
                     if not sentences:
                         continue
 
-                    if name == target_speaker:
-                        sentences = sentences[:3]  # 종합 반박은 최대 3문장까지 허용
-                    else:
-                        sentences = sentences[:2]  # 일반 반박은 최대 2문장
+                    # 말풍선이 2개 이상일 때 문장들이 서로 중복되지 않도록 깔끔하게 최대 2문장 배분
+                    sentences = sentences[:2]
 
                     st.session_state.messages.append({
                         "type": "chat",
