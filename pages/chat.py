@@ -132,8 +132,7 @@ PHILOSOPHERS = {
             "- 상대의 의견을 존중하면서도 그 사람이 당연하게 받아들이는 전제를 부드러운 태도 속에 조용하고 날카로운 질문과 사색적인 반론으로 파고들어라.\n"
             "- 고등학생이 이해하기 쉬운 어휘를 사용해라.\n"
             "- 반드시 순수 한국어로만 답해라."
-        ),
-        "fallback": "기존의 당연한 틀을 넘어 스스로 가치를 창조해야 합니다."
+        )
     },
     "소크라테스": {
         "icon": "🦉",
@@ -148,8 +147,7 @@ PHILOSOPHERS = {
             "- 질문을 많이 던지되 공격적이거나 권위적이지 않으며, 하나의 질문에서 또 다른 질문을 만들어 상대의 생각을 깊이 파고들어라.\n"
             "- 고등학생이 이해하기 쉬운 어휘를 사용해라.\n"
             "- 반드시 순수 한국어로만 답해라."
-        ),
-        "fallback": "그대, 우리가 아는 것이 정말 진실인지 스스로에게 질문해 보지 않겠는가?"
+        )
     },
     "장자": {
         "icon": "🦋",
@@ -163,8 +161,7 @@ PHILOSOPHERS = {
             "- 얽매이지 않고 여유로우면서도 뼈가 있는 비유와 해학을 담아 단호하게 자신의 사상을 밝혀라.\n"
             "- 고등학생이 이해하기 쉬운 어휘를 사용해라.\n"
             "- 반드시 순수 한국어로만 답변해라."
-        ),
-        "fallback": "억지로 무언가 하려 하지 말고 자연의 흐름에 온전히 몸을 맡기시오."
+        )
     },
     "칸트": {
         "icon": "🕰️",
@@ -179,8 +176,7 @@ PHILOSOPHERS = {
             "- '그대', '~하지 않겠습니까' 등의 품위 있는 존댓말을 쓰며 대화해라.\n"
             "- 고등학생이 이해하기 쉬운 어휘를 사용해라.\n"
             "- 반드시 순수 한국어로만 답변해라."
-        ),
-        "fallback": "어떤 상황에서도 보편적인 도덕 법칙과 의무를 지켜야만 합니다."
+        )
     },
     "홉스": {
         "icon": "🦁",
@@ -194,14 +190,16 @@ PHILOSOPHERS = {
             "- 감정에 흔들리지 않고 '그것은 지나치게 낙관적인 생각입니다', '그러므로 ~해야 합니다'처럼 냉철하고 직설적이며 권위 있고 단호한 결론을 내려라.\n"
             "- 고등학생이 이해하기 쉬운 어휘를 사용해라.\n"
             "- 반드시 순수 한국어로만 답해라."
-        ),
-        "fallback": "인간의 이기적인 투쟁을 막기 위해서는 강력한 법과 질서가 필수적입니다."
+        )
     }
 }
 
 # 텍스트 내 철학자 이름 색상 적용 및 **기호를 볼딕체(<b>)로 변환해 주는 헬퍼 함수
 def colorize_philosopher_names(text):
+    # 1. **문구** 형태를 HTML <b> 태그로 변환
     text = re.sub(r'\*\*(.*?)\*\*', r'<b style="font-weight: bold;">\1</b>', text)
+    
+    # 2. 철학자 이름 색상 적용
     for name, info in PHILOSOPHERS.items():
         colored_tag = f"<span style='color: {info['color']}; font-weight: bold;'>{name}</span>"
         text = text.replace(name, colored_tag)
@@ -221,14 +219,6 @@ if "waiting_for_tikitaka_choice" not in st.session_state:
 
 # 5. 토론 주제 입력 영역
 topic = st.text_input("아고라 채팅방에 던질 토론 주제를 입력하세요:", placeholder="예: 동물원은 존재해야 하는가?", key="topic_input")
-
-# 토론 주제 입력칸 바로 아래 찬반 토론 주제 예시 안내 모듈 추가
-st.info("""
-💡 **추천 찬반 토론 주제 예시**
-* 🦁 동물원은 교육적 가치를 위해 계속 존재해야 하는가? (찬성 vs 반대)
-* 🤖 인공지능(AI) 창작물의 저작권을 인정해야 하는가? (찬성 vs 반대)
-* 📱 중·고등학교 학생들의 스마트폰 교내 사용을 전면 금지해야 하는가? (찬성 vs 반대)
-""")
 
 if st.button("💬 채팅방 입장 및 토론 시작"):
     if topic.strip():
@@ -350,12 +340,14 @@ if st.session_state.discussion_active:
                             messages=[{"role": "user", "content": intro_content}],
                         )
                         text = res.choices[0].message.content.strip()
-                        cleaned_lines = clean_ai_text(text, max_sentences=2) if text else [info['fallback']]
+                        if not text:
+                            continue
                     except Exception:
-                        cleaned_lines = [info['fallback']]
+                        continue
                     
+                    cleaned_lines = clean_ai_text(text, max_sentences=2)
                     if not cleaned_lines:
-                        cleaned_lines = [info['fallback']]
+                        continue
 
                     st.session_state.messages.append({
                         "type": "chat",
@@ -421,12 +413,14 @@ if st.session_state.discussion_active:
                                     messages=[{"role": "user", "content": individual_debate_content}],
                                 )
                                 text = res.choices[0].message.content.strip()
-                                cleaned_lines = clean_ai_text(text, max_sentences=2) if text else [info['fallback']]
+                                if not text:
+                                    continue
                             except Exception:
-                                cleaned_lines = [info['fallback']]
+                                continue
 
+                            cleaned_lines = clean_ai_text(text, max_sentences=2)
                             if not cleaned_lines:
-                                cleaned_lines = [info['fallback']]
+                                continue
 
                             st.session_state.messages.append({
                                 "type": "chat",
@@ -453,12 +447,14 @@ if st.session_state.discussion_active:
                                 messages=[{"role": "user", "content": debate_content}],
                             )
                             text = res.choices[0].message.content.strip()
-                            cleaned_lines = clean_ai_text(text, max_sentences=2) if text else [info['fallback']]
+                            if not text:
+                                continue
                         except Exception:
-                            cleaned_lines = [info['fallback']]
+                            continue
                         
+                        cleaned_lines = clean_ai_text(text, max_sentences=2)
                         if not cleaned_lines:
-                            cleaned_lines = [info['fallback']]
+                            continue
 
                         st.session_state.messages.append({
                             "type": "chat",
@@ -477,21 +473,19 @@ if st.session_state.discussion_active:
 
                 st.rerun()
 
-            # 사회자 최종 요약 카드 생성 (찬성/반대/중립 입장 명시 및 각 철학자 고유 말투 반영)
+            # 사회자 최종 요약 카드 생성
             else:
                 summary_prompt = (
                     f"토론 주제: {st.session_state.current_topic}\n"
-                    f"지침: 사회자로서 이번 주제('{st.session_state.current_topic}')에 대해 니체, 소크라테스, 장자, 칸트, 홉스가 각각 찬성하는지, 반대하는지, 혹은 중립적인지 명확히 제시하면서 각자의 철학적 관점과 결론을 요약해 주세요.\n"
-                    "만약 특정 철학자의 사상이 이 주제에 대해 중립적이라면, 반드시 '이 주제에 대해 중립적이다'라고 표현하고 그 이유를 설명해 주세요.\n"
-                    "각 철학자별 한 줄 요약은 반드시 해당 철학자의 페르소나와 말투(니체는 초인과 권력의 의지를 담은 단호한 결론, 소크라테스는 무지와 질문을 던지는 탐구적 말투, 장자는 무위자연과 허무를 꿰뚫는 해학적 말투, 칸트는 정언명령과 보편적 도덕 의무를 강조하는 엄격한 말투, 홉스는 만인의 투쟁과 리바이어던의 필요성을 단호하게 짓누르는 현실주의적 말투)를 완벽하게 살려서 작성해 주세요.\n"
+                    f"지침: 사회자로서 이번 주제('{st.session_state.current_topic}')에 대해 니체, 소크라테스, 장자, 칸트, 홉스가 각각 어떤 고유한 관점과 주장을 펼쳤는지 고등학생 눈높이에 맞춰서 1문장씩 요약해 주세요.\n"
                     "출력 시 철학자 이름 앞뒤에 마크다운 기호(**)를 절대 붙이지 말고, 순수 텍스트와 HTML 태그만 사용해 주세요.\n"
                     "반드시 아래 형식으로만 작성해 주세요:\n"
                     f"### 📊 [사회자] '{st.session_state.current_topic}'에 대한 철학자별 핵심 주장\n"
-                    f"- ⚡ 니체: [찬성/반대/중립] (니체 페르소나와 말투로 내린 결론 1문장)\n"
-                    f"- 🦉 소크라테스: [찬성/반대/중립] (소크라테스 페르소나와 말투로 내린 결론 1문장)\n"
-                    f"- 🦋 장자: [찬성/반대/중립] (장자 페르소나와 말투로 내린 결론 1문장)\n"
-                    f"- 🕰️ 칸트: [찬성/반대/중립] (칸트 페르소나와 말투로 내린 결론 1문장)\n"
-                    f"- 🦁 홉스: [찬성/반대/중립] (홉스 페르소나와 말투로 내린 결론 1문장)"
+                    f"- ⚡ 니체: (주제에 맞는 니체 관점 1문장)\n"
+                    f"- 🦉 소크라테스: (주제에 맞는 소크라테스 관점 1문장)\n"
+                    f"- 🦋 장자: (주제에 맞는 장자 관점 1문장)\n"
+                    f"- 🕰️ 칸트: (주제에 맞는 칸트 관점 1문장)\n"
+                    f"- 🦁 홉스: (주제에 맞는 홉스 관점 1문장)"
                 )
                 try:
                     res = client.chat.completions.create(
@@ -502,11 +496,11 @@ if st.session_state.discussion_active:
                 except Exception:
                     summary_text = (
                         f"### 📊 [사회자] '{st.session_state.current_topic}'에 대한 철학자별 핵심 주장\n"
-                        f"- ⚡ 니체: [반대] 기존의 모든 도덕적 틀을 깨부수고 우리 스스로 새로운 가치를 창조해야만 한다!\n"
-                        f"- 🦉 소크라테스: [중립] 이 주제에 대해 중립적이며, 그대가 아는 것이 진실인지 스스로에게 끊임없이 질문해야 하지 않겠는가?\n"
-                        f"- 🦋 장자: [중립] 이 주제에 대해 중립적이며, 억지로 무엇을 하려 하지 말고 자연의 흐름에 온전히 몸을 맡길지니라.\n"
-                        f"- 🕰️ 칸트: [찬성] 감정과 이익을 넘어 어떤 상황에서도 보편적 도덕 법칙과 의무를 엄격하게 지켜야만 합니다.\n"
-                        f"- 🦁 홉스: [찬성] 이기적인 인간의 투쟁을 막기 위해서는 강력한 법과 절대적인 질서가 오직 답이다."
+                        f"- ⚡ 니체: 기존의 틀을 깨부수고 스스로의 가치를 창조해야 한다.\n"
+                        f"- 🦉 소크라테스: 네가 아는 것이 정말 진실인지 끊임없이 질문해야 한다.\n"
+                        f"- 🦋 장자: 억지로 무언가 하려 하지 말고 자연의 흐름에 몸을 맡겨야 한다.\n"
+                        f"- 🕰️ 칸트: 어떤 상황에서도 보편적인 도덕 법칙과 의무를 지켜야 한다.\n"
+                        f"- 🦁 홉스: 인간의 이기심을 통제하기 위해 강력한 법과 질서가 필수적이다."
                     )
 
                 summary_text = colorize_philosopher_names(summary_text)
