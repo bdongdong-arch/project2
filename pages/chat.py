@@ -1,6 +1,7 @@
 import os
 import random
 import time
+import re
 from datetime import datetime, timezone, timedelta
 from openai import OpenAI
 import streamlit as st
@@ -193,8 +194,12 @@ PHILOSOPHERS = {
     }
 }
 
-# 텍스트 내 철학자 이름에 고유 색상을 입혀주는 헬퍼 함수
+# 텍스트 내 철학자 이름 색상 적용 및 **기호를 볼딕체(<b>)로 변환해 주는 헬퍼 함수
 def colorize_philosopher_names(text):
+    # 1. **문구** 형태를 HTML <b> 태그로 변환
+    text = re.sub(r'\*\*(.*?)\*\*', r'<b style="font-weight: bold;">\1</b>', text)
+    
+    # 2. 철학자 이름 색상 적용
     for name, info in PHILOSOPHERS.items():
         colored_tag = f"<span style='color: {info['color']}; font-weight: bold;'>{name}</span>"
         text = text.replace(name, colored_tag)
@@ -212,7 +217,7 @@ if "step_count" not in st.session_state:
 if "waiting_for_tikitaka_choice" not in st.session_state:
     st.session_state.waiting_for_tikitaka_choice = False
 
-# 5. 토론 주제 입력 영역 (key를 부여하여 session_state로 값 관리)
+# 5. 토론 주제 입력 영역
 topic = st.text_input("아고라 채팅방에 던질 토론 주제를 입력하세요:", placeholder="예: 동물원은 존재해야 하는가?", key="topic_input")
 
 if st.button("💬 채팅방 입장 및 토론 시작"):
@@ -307,7 +312,6 @@ if st.session_state.discussion_active:
 
             # 텍스트 정제 헬퍼 함수
             def clean_ai_text(text, max_sentences=2):
-                import re
                 text = re.sub(r'\[시스템 알림:[^\]]*\]', '', text)
                 raw_lines = text.split('\n')
                 sentences = []
@@ -511,7 +515,6 @@ if st.session_state.discussion_active:
 
     else:
         st.success("🎉 아고라 광장의 열띤 토론이 모두 종료되었습니다!")
-        # 새로운 주제로 대화하기 버튼을 눌렀을 때 입력창 상태(topic_input)를 비우도록 수정
         if st.button("🔄 새로운 주제로 대화하기"):
             st.session_state.messages = []
             st.session_state.discussion_active = False
