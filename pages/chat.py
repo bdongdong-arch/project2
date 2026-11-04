@@ -220,9 +220,9 @@ if "waiting_for_tikitaka_choice" not in st.session_state:
     st.session_state.waiting_for_tikitaka_choice = False
 
 # 5. 토론 주제 입력 영역
-topic = st.text_input("아고라 채팅방에 던질 토론 주제를 입력하세요:", placeholder="예: 동물원은 존재해야 하는가?")
+topic = st.text_input("아고라 채팅방에 던질 토론 주제를 입력하세요:", placeholder="예: 동물원은 존재해야 하는가?", key="topic_input")
 
-# 토론 주제 입력칸 바로 밑에 찬반 주제 안내 모듈 배치
+# 토론 주제 입력칸 바로 아래 찬반 토론 주제 예시 안내 모듈 추가
 st.info("""
 💡 **추천 찬반 토론 주제 예시**
 * 🦁 동물원은 교육적 가치를 위해 계속 존재해야 하는가? (찬성 vs 반대)
@@ -308,7 +308,7 @@ if st.session_state.discussion_active:
         if current_step == 0:
             spinner_msg = "🏛️ 철학자들이 입장해 첫 생각을 진중하게 발표하는 중..."
         elif current_step == MAX_STEPS - 1:
-            spinner_msg = "📊 사회자가 대화 내용을 바탕으로 찬반 입장을 정리하는 중..."
+            spinner_msg = "📊 사회자가 대화 내용을 바탕으로 핵심 주장을 정리하는 중..."
         else:
             spinner_msg = f"🔥 톡으로 서로를 의식하며 티키타카 수다를 떠는 중... ({current_step}/{MAX_STEPS-2})"
 
@@ -351,7 +351,7 @@ if st.session_state.discussion_active:
                         )
                         text = res.choices[0].message.content.strip()
                         cleaned_lines = clean_ai_text(text, max_sentences=2) if text else [info['fallback']]
-                    except Exception as e:
+                    except Exception:
                         cleaned_lines = [info['fallback']]
                     
                     if not cleaned_lines:
@@ -477,16 +477,16 @@ if st.session_state.discussion_active:
 
                 st.rerun()
 
-            # 사회자 최종 요약 카드 생성 (찬성/반대/중립 입장 명시 및 철학자별 고유 말투 반영)
+            # 사회자 최종 요약 카드 생성 (찬성/반대/중립 입장 명시 및 각 철학자 고유 말투 반영)
             else:
                 summary_prompt = (
                     f"토론 주제: {st.session_state.current_topic}\n"
-                    f"지침: 사회자로서 이번 찬반 토론 주제('{st.session_state.current_topic}')에 대해 니체, 소크라테스, 장자, 칸트, 홉스가 각각 **[찬성]**, **[반대]**, 혹은 **[중립]** 중 어떤 입장을 가지는지 명확히 제시해 주세요.\n"
-                    "만약 중립적인 의견일 경우 반드시 '이 주제에 대해 중립적이다'라고 표현하고 그 이유를 설명해 주세요.\n"
+                    f"지침: 사회자로서 이번 주제('{st.session_state.current_topic}')에 대해 니체, 소크라테스, 장자, 칸트, 홉스가 각각 찬성하는지, 반대하는지, 혹은 중립적인지 명확히 제시하면서 각자의 철학적 관점과 결론을 요약해 주세요.\n"
+                    "만약 특정 철학자의 사상이 이 주제에 대해 중립적이라면, 반드시 '이 주제에 대해 중립적이다'라고 표현하고 그 이유를 설명해 주세요.\n"
                     "각 철학자별 한 줄 요약은 반드시 해당 철학자의 페르소나와 말투(니체는 초인과 권력의 의지를 담은 단호한 결론, 소크라테스는 무지와 질문을 던지는 탐구적 말투, 장자는 무위자연과 허무를 꿰뚫는 해학적 말투, 칸트는 정언명령과 보편적 도덕 의무를 강조하는 엄격한 말투, 홉스는 만인의 투쟁과 리바이어던의 필요성을 단호하게 짓누르는 현실주의적 말투)를 완벽하게 살려서 작성해 주세요.\n"
                     "출력 시 철학자 이름 앞뒤에 마크다운 기호(**)를 절대 붙이지 말고, 순수 텍스트와 HTML 태그만 사용해 주세요.\n"
                     "반드시 아래 형식으로만 작성해 주세요:\n"
-                    f"### 📊 [사회자] '{st.session_state.current_topic}'에 대한 철학자별 찬반 입장 및 주장\n"
+                    f"### 📊 [사회자] '{st.session_state.current_topic}'에 대한 철학자별 핵심 주장\n"
                     f"- ⚡ 니체: [찬성/반대/중립] (니체 페르소나와 말투로 내린 결론 1문장)\n"
                     f"- 🦉 소크라테스: [찬성/반대/중립] (소크라테스 페르소나와 말투로 내린 결론 1문장)\n"
                     f"- 🦋 장자: [찬성/반대/중립] (장자 페르소나와 말투로 내린 결론 1문장)\n"
@@ -501,7 +501,7 @@ if st.session_state.discussion_active:
                     summary_text = res.choices[0].message.content.strip()
                 except Exception:
                     summary_text = (
-                        f"### 📊 [사회자] '{st.session_state.current_topic}'에 대한 철학자별 찬반 입장 및 주장\n"
+                        f"### 📊 [사회자] '{st.session_state.current_topic}'에 대한 철학자별 핵심 주장\n"
                         f"- ⚡ 니체: [반대] 기존의 모든 도덕적 틀을 깨부수고 우리 스스로 새로운 가치를 창조해야만 한다!\n"
                         f"- 🦉 소크라테스: [중립] 이 주제에 대해 중립적이며, 그대가 아는 것이 진실인지 스스로에게 끊임없이 질문해야 하지 않겠는가?\n"
                         f"- 🦋 장자: [중립] 이 주제에 대해 중립적이며, 억지로 무엇을 하려 하지 말고 자연의 흐름에 온전히 몸을 맡길지니라.\n"
@@ -526,4 +526,5 @@ if st.session_state.discussion_active:
             st.session_state.discussion_active = False
             st.session_state.step_count = 0
             st.session_state.waiting_for_tikitaka_choice = False
+            st.session_state.topic_input = ""
             st.rerun()
