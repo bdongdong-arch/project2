@@ -132,7 +132,8 @@ PHILOSOPHERS = {
             "- 상대의 의견을 존중하면서도 그 사람이 당연하게 받아들이는 전제를 부드러운 태도 속에 조용하고 날카로운 질문과 사색적인 반론으로 파고들어라.\n"
             "- 고등학생이 이해하기 쉬운 어휘를 사용해라.\n"
             "- 반드시 순수 한국어로만 답해라."
-        )
+        ),
+        "fallback": "기존의 당연한 틀을 넘어 스스로 가치를 창조해야 합니다."
     },
     "소크라테스": {
         "icon": "🦉",
@@ -147,7 +148,8 @@ PHILOSOPHERS = {
             "- 질문을 많이 던지되 공격적이거나 권위적이지 않으며, 하나의 질문에서 또 다른 질문을 만들어 상대의 생각을 깊이 파고들어라.\n"
             "- 고등학생이 이해하기 쉬운 어휘를 사용해라.\n"
             "- 반드시 순수 한국어로만 답해라."
-        )
+        ),
+        "fallback": "그대, 우리가 아는 것이 정말 진실인지 스스로에게 질문해 보지 않겠는가?"
     },
     "장자": {
         "icon": "🦋",
@@ -161,7 +163,8 @@ PHILOSOPHERS = {
             "- 얽매이지 않고 여유로우면서도 뼈가 있는 비유와 해학을 담아 단호하게 자신의 사상을 밝혀라.\n"
             "- 고등학생이 이해하기 쉬운 어휘를 사용해라.\n"
             "- 반드시 순수 한국어로만 답변해라."
-        )
+        ),
+        "fallback": "억지로 무언가 하려 하지 말고 자연의 흐름에 온전히 몸을 맡기시오."
     },
     "칸트": {
         "icon": "🕰️",
@@ -176,7 +179,8 @@ PHILOSOPHERS = {
             "- '그대', '~하지 않겠습니까' 등의 품위 있는 존댓말을 쓰며 대화해라.\n"
             "- 고등학생이 이해하기 쉬운 어휘를 사용해라.\n"
             "- 반드시 순수 한국어로만 답변해라."
-        )
+        ),
+        "fallback": "어떤 상황에서도 보편적인 도덕 법칙과 의무를 지켜야만 합니다."
     },
     "홉스": {
         "icon": "🦁",
@@ -190,7 +194,8 @@ PHILOSOPHERS = {
             "- 감정에 흔들리지 않고 '그것은 지나치게 낙관적인 생각입니다', '그러므로 ~해야 합니다'처럼 냉철하고 직설적이며 권위 있고 단호한 결론을 내려라.\n"
             "- 고등학생이 이해하기 쉬운 어휘를 사용해라.\n"
             "- 반드시 순수 한국어로만 답해라."
-        )
+        ),
+        "fallback": "인간의 이기적인 투쟁을 막기 위해서는 강력한 법과 질서가 필수적입니다."
     }
 }
 
@@ -345,14 +350,12 @@ if st.session_state.discussion_active:
                             messages=[{"role": "user", "content": intro_content}],
                         )
                         text = res.choices[0].message.content.strip()
-                        if not text:
-                            continue
-                    except Exception:
-                        continue
+                        cleaned_lines = clean_ai_text(text, max_sentences=2) if text else [info['fallback']]
+                    except Exception as e:
+                        cleaned_lines = [info['fallback']]
                     
-                    cleaned_lines = clean_ai_text(text, max_sentences=2)
                     if not cleaned_lines:
-                        continue
+                        cleaned_lines = [info['fallback']]
 
                     st.session_state.messages.append({
                         "type": "chat",
@@ -418,14 +421,12 @@ if st.session_state.discussion_active:
                                     messages=[{"role": "user", "content": individual_debate_content}],
                                 )
                                 text = res.choices[0].message.content.strip()
-                                if not text:
-                                    continue
+                                cleaned_lines = clean_ai_text(text, max_sentences=2) if text else [info['fallback']]
                             except Exception:
-                                continue
+                                cleaned_lines = [info['fallback']]
 
-                            cleaned_lines = clean_ai_text(text, max_sentences=2)
                             if not cleaned_lines:
-                                continue
+                                cleaned_lines = [info['fallback']]
 
                             st.session_state.messages.append({
                                 "type": "chat",
@@ -452,14 +453,12 @@ if st.session_state.discussion_active:
                                 messages=[{"role": "user", "content": debate_content}],
                             )
                             text = res.choices[0].message.content.strip()
-                            if not text:
-                                continue
+                            cleaned_lines = clean_ai_text(text, max_sentences=2) if text else [info['fallback']]
                         except Exception:
-                            continue
+                            cleaned_lines = [info['fallback']]
                         
-                        cleaned_lines = clean_ai_text(text, max_sentences=2)
                         if not cleaned_lines:
-                            continue
+                            cleaned_lines = [info['fallback']]
 
                         st.session_state.messages.append({
                             "type": "chat",
