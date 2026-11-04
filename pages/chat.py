@@ -214,19 +214,16 @@ if "step_count" not in st.session_state:
 if "waiting_for_tikitaka_choice" not in st.session_state:
     st.session_state.waiting_for_tikitaka_choice = False
 
-# 5. 토론 주제 안내 메시지 및 입력 영역
-st.markdown("""
-<div style="background-color: #f0f4f8; padding: 12px 16px; border-radius: 10px; border-left: 5px solid #1976D2; margin-bottom: 15px; color: #111111;">
-    <strong>💡 추천 찬반 토론 주제 예시</strong><br>
-    <ul style="margin: 5px 0 0 20px; padding: 0; font-size: 0.9rem;">
-        <li>동물원은 교육적 가치를 위해 계속 존재해야 하는가? (찬성 vs 반대)</li>
-        <li>인공지능(AI) 창작물의 저작권을 인정해야 하는가? (찬성 vs 반대)</li>
-        <li>중·고등학교 학생들의 스마트폰 교내 사용을 전면 금지해야 하는가? (찬성 vs 반대)</li>
-    </ul>
-</div>
-""", unsafe_allow_html=True)
-
+# 5. 토론 주제 입력 영역
 topic = st.text_input("아고라 채팅방에 던질 토론 주제를 입력하세요:", placeholder="예: 동물원은 존재해야 하는가?")
+
+# 토론 주제 입력칸 바로 밑에 찬반 주제 안내 모듈 배치
+st.info("""
+💡 **추천 찬반 토론 주제 예시**
+* 🦁 동물원은 교육적 가치를 위해 계속 존재해야 하는가? (찬성 vs 반대)
+* 🤖 인공지능(AI) 창작물의 저작권을 인정해야 하는가? (찬성 vs 반대)
+* 📱 중·고등학교 학생들의 스마트폰 교내 사용을 전면 금지해야 하는가? (찬성 vs 반대)
+""")
 
 if st.button("💬 채팅방 입장 및 토론 시작"):
     if topic.strip():
