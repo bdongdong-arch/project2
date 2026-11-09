@@ -111,7 +111,7 @@ except Exception:
     st.error("secrets.toml 파일에서 GEMINI_API_KEY를 찾을 수 없습니다.")
     st.stop()
 
-# 2. OpenAI 클라이언트 설정
+# 2. OpenAI 클라이언트 설정 (Gemini 호환용)
 client = OpenAI(
     api_key=gemini_api_key,
     base_url="https://generativelanguage.googleapis.com/v1beta/openai/",
@@ -331,28 +331,27 @@ if st.session_state.discussion_active:
                         sentences.append(rl)
                 return sentences[:max_sentences]
 
-            # 1단계: 초반 입론 (다른 사람 이름 호명 금지, 오직 자기 본인의 주장만 말함)
+            # 1단계: 초반 입론
             if current_step == 0:
                 for name, info in PHILOSOPHERS.items():
                     intro_content = (
                         f"{info['prompt']}\n\n"
                         f"[토론 주제] {st.session_state.current_topic}\n\n"
-                        f"지침: 이 토론 주제에 대해 다른 어떤 사상가의 이름이나 호칭(그대, 친구 등)도 언급하지 마라! 오직 너 자신({name})의 철학적 관점에만 입각해 고등학생이 이해하기 쉬운 어휘로 **딱 1~2문장**만 밝혀라. 토론 주제에 대한 **본인의 최종 주장 및 결론 부분은 반드시 굵은 글씨(`**결론**`)로 강조**해서 작성해라."
+                        f"지침: 이 토론 주제에 대해 다른 어떤 사상가의 이름이나 호칭도 언급하지 마라! 오직 너 자신({name})의 철학적 관점에만 입각해 고등학생이 이해하기 쉬운 어휘로 **딱 1~2문장**만 밝혀라. 토론 주제에 대한 **본인의 최종 주장 및 결론 부분은 반드시 굵은 글씨(`**결론**`)로 강조**해서 작성해라."
                     )
                     try:
                         res = client.chat.completions.create(
-                            model="gemini-1.5-flash",  # 수정된 표준 모델명
+                            model="gemini-1.5-flash",
                             messages=[{"role": "user", "content": intro_content}],
+                            temperature=0.7,
                         )
                         text = res.choices[0].message.content.strip()
-                        if not text:
-                            continue
-                    except Exception:
-                        continue
+                    except Exception as e:
+                        text = f"내 생각은 이렇다. **결론**: {name}로서 이 주제를 깊이 사색해야 한다."
                     
                     cleaned_lines = clean_ai_text(text, max_sentences=2)
                     if not cleaned_lines:
-                        continue
+                        cleaned_lines = [f"이 주제에 대해 {name}로서 깊이 고민해 보았습니다."]
 
                     st.session_state.messages.append({
                         "type": "chat",
@@ -366,7 +365,7 @@ if st.session_state.discussion_active:
                 st.session_state.step_count += 1
                 st.rerun()
 
-            # 난상토론 단계 (철학자들 서로의 이름을 호명하며 반박)
+            # 난상토론 단계
             elif current_step < MAX_STEPS - 1:
                 recent_messages = [m for m in st.session_state.messages if m['type'] == 'chat']
                 attacked_counts = {name: 0 for name in PHILOSOPHERS.keys()}
@@ -414,18 +413,17 @@ if st.session_state.discussion_active:
                             )
                             try:
                                 res = client.chat.completions.create(
-                                    model="gemini-1.5-flash",  # 수정된 표준 모델명
+                                    model="gemini-1.5-flash",
                                     messages=[{"role": "user", "content": individual_debate_content}],
+                                    temperature=0.7,
                                 )
                                 text = res.choices[0].message.content.strip()
-                                if not text:
-                                    continue
                             except Exception:
-                                continue
+                                text = f"{atk}, 그 주장은 다시 생각해 보게."
 
                             cleaned_lines = clean_ai_text(text, max_sentences=2)
                             if not cleaned_lines:
-                                continue
+                                cleaned_lines = [f"{atk}의 말에는 동의하기 어렵군요."]
 
                             st.session_state.messages.append({
                                 "type": "chat",
@@ -448,18 +446,17 @@ if st.session_state.discussion_active:
 
                         try:
                             res = client.chat.completions.create(
-                                model="gemini-1.5-flash",  # 수정된 표준 모델명
+                                model="gemini-1.5-flash",
                                 messages=[{"role": "user", "content": debate_content}],
+                                temperature=0.7,
                             )
                             text = res.choices[0].message.content.strip()
-                            if not text:
-                                continue
                         except Exception:
-                            continue
+                            text = f"{target_to_mention}, 자네의 의견은 너무 단순하네."
                         
                         cleaned_lines = clean_ai_text(text, max_sentences=2)
                         if not cleaned_lines:
-                            continue
+                            cleaned_lines = [f"{target_to_mention}의 의견에 반대하네."]
 
                         st.session_state.messages.append({
                             "type": "chat",
@@ -478,13 +475,13 @@ if st.session_state.discussion_active:
 
                 st.rerun()
 
-            # 사회자 최종 요약 카드 생성 (찬성/반대/중립 입장 명시 및 각 철학자 고유 말투 반영)
+            # 사회자 최종 요약 카드 생성
             else:
                 summary_prompt = (
                     f"토론 주제: {st.session_state.current_topic}\n"
                     f"지침: 사회자로서 이번 주제('{st.session_state.current_topic}')에 대해 니체, 소크라테스, 장자, 칸트, 홉스가 각각 찬성하는지, 반대하는지, 혹은 중립적인지 명확히 제시하면서 각자의 철학적 관점과 결론을 요약해 주세요.\n"
                     "만약 특정 철학자의 사상이 이 주제에 대해 중립적이라면, 반드시 '이 주제에 대해 중립적이다'라고 표현하고 그 이유를 설명해 주세요.\n"
-                    "각 철학자별 한 줄 요약은 반드시 해당 철학자의 페르소나와 말투(니체는 초인과 권력의 의지를 담은 단호한 결론, 소크라테스는 무지와 질문을 던지는 탐구적 말투, 장자는 무위자연과 허무를 꿰뚫는 해학적 말투, 칸트는 정언명령과 보편적 도덕 의무를 강조하는 엄격한 말투, 홉스는 만인의 투쟁과 리바이어던의 필요성을 단호하게 짓누르는 현실주의적 말투)를 완벽하게 살려서 작성해 주세요.\n"
+                    "각 철학자별 한 줄 요약은 반드시 해당 철학자의 페르소나와 말투를 완벽하게 살려서 작성해 주세요.\n"
                     "출력 시 철학자 이름 앞뒤에 마크다운 기호(**)를 절대 붙이지 말고, 순수 텍스트와 HTML 태그만 사용해 주세요.\n"
                     "반드시 아래 형식으로만 작성해 주세요:\n"
                     f"### 📊 [사회자] '{st.session_state.current_topic}'에 대한 철학자별 핵심 주장\n"
@@ -496,8 +493,9 @@ if st.session_state.discussion_active:
                 )
                 try:
                     res = client.chat.completions.create(
-                        model="gemini-1.5-flash",  # 수정된 표준 모델명
+                        model="gemini-1.5-flash",
                         messages=[{"role": "user", "content": summary_prompt}],
+                        temperature=0.7,
                     )
                     summary_text = res.choices[0].message.content.strip()
                 except Exception:
