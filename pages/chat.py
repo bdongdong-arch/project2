@@ -6,118 +6,105 @@ from datetime import datetime, timezone, timedelta
 from openai import OpenAI
 import streamlit as st
 
-# 페이지 기본 설정
-st.set_page_config(page_title="🏛️ AI 철학자 아고라 카톡방", page_icon="🏛️", layout="centered")
-
-# 카카오톡 스타일 Custom CSS
-st.markdown("""
-<style>
-    .stApp {
-        background-color: #BACEE0 !important;
-    }
+# ==========================================
+# 1. 페이지 설정 및 디자인 스타일 정의
+# ==========================================
+def configure_page():
+    """Streamlit 페이지 기본 설정 및 카카오톡 스타일 CSS 주입"""
+    st.set_page_config(page_title="🏛️ AI 철학자 아고라 카톡방", page_icon="🏛️", layout="centered")
     
-    .block-container {
-        padding-top: 1rem;
-        padding-bottom: 3rem;
-        max-width: 600px;
-    }
+    st.markdown("""
+    <style>
+        .stApp {
+            background-color: #BACEE0 !important;
+        }
+        
+        .block-container {
+            padding-top: 1rem;
+            padding-bottom: 3rem;
+            max-width: 600px;
+        }
 
-    .kakaotalk-notice {
-        background-color: rgba(0, 0, 0, 0.15);
-        color: white;
-        border-radius: 15px;
-        padding: 8px 16px;
-        text-align: center;
-        font-size: 0.9rem;
-        margin: 10px auto 25px auto;
-        width: fit-content;
-        font-weight: bold;
-    }
+        .kakaotalk-notice {
+            background-color: rgba(0, 0, 0, 0.15);
+            color: white;
+            border-radius: 15px;
+            padding: 8px 16px;
+            text-align: center;
+            font-size: 0.9rem;
+            margin: 10px auto 25px auto;
+            width: fit-content;
+            font-weight: bold;
+        }
 
-    .kakao-msg-row {
-        display: flex;
-        margin-bottom: 14px;
-        align-items: flex-start;
-    }
-    
-    .kakao-avatar {
-        width: 42px;
-        height: 42px;
-        border-radius: 16px;
-        background-color: #FFE812;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 1.4rem;
-        margin-right: 10px;
-        flex-shrink: 0;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-    }
-    
-    .kakao-info-col {
-        display: flex;
-        flex-direction: column;
-    }
-    
-    .kakao-bubble-line {
-        display: flex;
-        align-items: flex-end;
-        margin-bottom: 4px;
-    }
-    
-    .kakao-bubble-box {
-        background-color: #FFFFFF;
-        color: #111111;
-        padding: 10px 14px;
-        border-radius: 14px;
-        border-top-left-radius: 2px;
-        font-size: 0.95rem;
-        line-height: 1.4;
-        max-width: 340px;
-        word-break: break-word;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.12);
-    }
-    
-    .kakao-timestamp {
-        font-size: 0.72rem;
-        color: #4B637E;
-        margin-left: 6px;
-        white-space: nowrap;
-        flex-shrink: 0;
-    }
+        .kakao-msg-row {
+            display: flex;
+            margin-bottom: 14px;
+            align-items: flex-start;
+        }
+        
+        .kakao-avatar {
+            width: 42px;
+            height: 42px;
+            border-radius: 16px;
+            background-color: #FFE812;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.4rem;
+            margin-right: 10px;
+            flex-shrink: 0;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        
+        .kakao-info-col {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .kakao-bubble-line {
+            display: flex;
+            align-items: flex-end;
+            margin-bottom: 4px;
+        }
+        
+        .kakao-bubble-box {
+            background-color: #FFFFFF;
+            color: #111111;
+            padding: 10px 14px;
+            border-radius: 14px;
+            border-top-left-radius: 2px;
+            font-size: 0.95rem;
+            line-height: 1.4;
+            max-width: 340px;
+            word-break: break-word;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.12);
+        }
+        
+        .kakao-timestamp {
+            font-size: 0.72rem;
+            color: #4B637E;
+            margin-left: 6px;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
 
-    .summary-card {
-        background-color: #FFFFFF;
-        border-radius: 16px;
-        padding: 22px;
-        margin-top: 20px;
-        margin-bottom: 20px;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-        color: #111111;
-        line-height: 1.6;
-    }
-</style>
-""", unsafe_allow_html=True)
+        .summary-card {
+            background-color: #FFFFFF;
+            border-radius: 16px;
+            padding: 22px;
+            margin-top: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            color: #111111;
+            line-height: 1.6;
+        }
+    </style>
+    """, unsafe_allow_html=True)
 
-# 페이지 최상단 앵커
-st.markdown('<div id="top-anchor"></div>', unsafe_allow_html=True)
-
-st.title("🏛️ AI 철학자 그룹채팅")
-
-# 1. API 키 가져오기
-try:
-    gemini_api_key = st.secrets["GEMINI_API_KEY"]
-except Exception:
-    st.error("secrets.toml 파일에서 GEMINI_API_KEY를 찾을 수 없습니다.")
-    st.stop()
-
-# 2. OpenAI 클라이언트 설정
-client = OpenAI(
-    api_key=gemini_api_key,
-    base_url="https://generativelanguage.googleapis.com/v1beta/openai/",
-)
-
-# 3. 5인 철학자 페르소나 정의
+# ==========================================
+# 2. 페르소나 및 데이터 설정
+# ==========================================
 PHILOSOPHERS = {
     "니체": {
         "icon": "⚡",
@@ -194,58 +181,86 @@ PHILOSOPHERS = {
     }
 }
 
-# 텍스트 내 철학자 이름 색상 적용 및 **기호를 볼딕체(<b>)로 변환해 주는 헬퍼 함수
+# ==========================================
+# 3. 유틸리티 및 텍스트 처리 함수
+# ==========================================
+def initialize_session_state():
+    """Streamlit 세션 상태 초기화"""
+    if "messages" not in st.session_state:
+        st.session_state.messages = []
+    if "discussion_active" not in st.session_state:
+        st.session_state.discussion_active = False
+    if "current_topic" not in st.session_state:
+        st.session_state.current_topic = ""
+    if "step_count" not in st.session_state:
+        st.session_state.step_count = 0
+    if "waiting_for_tikitaka_choice" not in st.session_state:
+        st.session_state.waiting_for_tikitaka_choice = False
+
 def colorize_philosopher_names(text):
+    """텍스트 내 철학자 이름에 고유 색상을 입히고 마크다운 볼드를 HTML 볼드로 변환"""
     text = re.sub(r'\*\*(.*?)\*\*', r'<b style="font-weight: bold;">\1</b>', text)
     for name, info in PHILOSOPHERS.items():
         colored_tag = f"<span style='color: {info['color']}; font-weight: bold;'>{name}</span>"
         text = text.replace(name, colored_tag)
     return text
 
-# 4. 세션 상태 초기화
-if "messages" not in st.session_state:
-    st.session_state.messages = []
-if "discussion_active" not in st.session_state:
-    st.session_state.discussion_active = False
-if "current_topic" not in st.session_state:
-    st.session_state.current_topic = ""
-if "step_count" not in st.session_state:
-    st.session_state.step_count = 0
-if "waiting_for_tikitaka_choice" not in st.session_state:
-    st.session_state.waiting_for_tikitaka_choice = False
+def clean_ai_text(text, max_sentences=2):
+    """AI가 생성한 응답 텍스트를 정제하여 설정된 문장 수 만큼 자르는 함수"""
+    text = re.sub(r'\[시스템 알림:[^\]]*\]', '', text)
+    raw_lines = text.split('\n')
+    sentences = []
+    for rl in raw_lines:
+        rl = rl.strip()
+        if not rl or rl == ']':
+            continue
+        split_sents = [s.strip() for s in re.split(r'(?<=[.?!])\s+', rl) if s.strip()]
+        if split_sents:
+            sentences.extend(split_sents)
+        else:
+            sentences.append(rl)
+    return sentences[:max_sentences]
 
-# 5. 토론 주제 안내 메시지 및 입력 영역
-st.markdown("""
-<div style="background-color: #f0f4f8; padding: 12px 16px; border-radius: 10px; border-left: 5px solid #1976D2; margin-bottom: 15px; color: #111111;">
-    <strong>💡 추천 찬반 토론 주제 예시</strong><br>
-    <ul style="margin: 5px 0 0 20px; padding: 0; font-size: 0.9rem;">
-        <li>동물원은 교육적 가치를 위해 계속 존재해야 하는가? (찬성 vs 반대)</li>
-        <li>인공지능(AI) 창작물의 저작권을 인정해야 하는가? (찬성 vs 반대)</li>
-        <li>중·고등학교 학생들의 스마트폰 교내 사용을 전면 금지해야 하는가? (찬성 vs 반대)</li>
-    </ul>
-</div>
-""", unsafe_allow_html=True)
+def get_current_kst_time():
+    """현재 한국 표준시(KST) 시간을 오전/오후 형식으로 반환"""
+    kst = timezone(timedelta(hours=9))
+    return datetime.now(kst).strftime("%p %I:%M").replace("AM", "오전").replace("PM", "오후")
 
-topic = st.text_input("아고라 채팅방에 던질 토론 주제를 입력하세요:", placeholder="예: 동물원은 존재해야 하는가?")
+# ==========================================
+# 4. AI API 통신 함수
+# ==========================================
+def fetch_ai_response(client, model_name, prompt):
+    """OpenAI 클라이언트를 통해 Gemini 모델에 프롬프트를 전송하고 응답을 받아오는 공통 함수"""
+    try:
+        res = client.chat.completions.create(
+            model=model_name,
+            messages=[{"role": "user", "content": prompt}],
+        )
+        return res.choices[0].message.content.strip()
+    except Exception:
+        return ""
 
-if st.button("💬 채팅방 입장 및 토론 시작"):
-    if topic.strip():
-        st.session_state.messages = []
-        st.session_state.current_topic = topic
-        st.session_state.discussion_active = True
-        st.session_state.step_count = 0
-        st.session_state.waiting_for_tikitaka_choice = False
-        st.rerun()
-    else:
-        st.warning("토론 주제를 입력해 주세요.")
+# ==========================================
+# 5. UI 렌더링 함수들
+# ==========================================
+def render_sidebar_or_header_info():
+    """토론 주제 안내 및 입력 폼 렌더링"""
+    st.markdown("""
+    <div style="background-color: #f0f4f8; padding: 12px 16px; border-radius: 10px; border-left: 5px solid #1976D2; margin-bottom: 15px; color: #111111;">
+        <strong>💡 추천 찬반 토론 주제 예시</strong><br>
+        <ul style="margin: 5px 0 0 20px; padding: 0; font-size: 0.9rem;">
+            <li>동물원은 교육적 가치를 위해 계속 존재해야 하는가? (찬성 vs 반대)</li>
+            <li>인공지능(AI) 창작물의 저작권을 인정해야 하는가? (찬성 vs 반대)</li>
+            <li>중·고등학교 학생들의 스마트폰 교내 사용을 전면 금지해야 하는가? (찬성 vs 반대)</li>
+        </ul>
+    </div>
+    """, unsafe_allow_html=True)
 
-# 6. 카카오톡 대화방 화면 렌더링
-if st.session_state.discussion_active:
-
+def render_chat_history():
+    """채팅방 대화 내역 및 요약 카드 렌더링"""
     st.markdown(f'<div class="kakaotalk-notice">📌 [토론 주제] {st.session_state.current_topic}</div>', unsafe_allow_html=True)
 
-    # 대화 출력
-    for idx_msg, chat in enumerate(st.session_state.messages):
+    for chat in st.session_state.messages:
         if chat["type"] == "chat":
             lines = chat["lines"]
             speaker = chat["speaker"]
@@ -263,7 +278,6 @@ if st.session_state.discussion_active:
             for idx, line in enumerate(lines):
                 is_last = (idx == len(lines) - 1)
                 time_div = f'<div class="kakao-timestamp">{time_str}</div>' if is_last else ''
-                
                 colored_line = colorize_philosopher_names(line)
                 
                 st.markdown(f"""
@@ -282,252 +296,264 @@ if st.session_state.discussion_active:
             </div>
             """, unsafe_allow_html=True)
 
-    MAX_STEPS = 9  
+# ==========================================
+# 6. 토론 진행 핵심 로직 함수들
+# ==========================================
+def process_intro_step(client, model_name, now_time):
+    """1단계: 초반 입론 (철학자 개별 소신 발표)"""
+    for name, info in PHILOSOPHERS.items():
+        intro_content = (
+            f"{info['prompt']}\n\n"
+            f"[토론 주제] {st.session_state.current_topic}\n\n"
+            f"지침: 이 토론 주제에 대해 다른 어떤 사상가의 이름이나 호칭(그대, 친구 등)도 언급하지 마라! 오직 너 자신({name})의 철학적 관점에만 입각해 고등학생이 이해하기 쉬운 어휘로 **딱 1~2문장**만 밝혀라. 토론 주제에 대한 **본인의 최종 주장 및 결론 부분은 반드시 굵은 글씨(`**결론**`)로 강조**해서 작성해라."
+        )
+        text = fetch_ai_response(client, model_name, intro_content)
+        if not text:
+            continue
+        
+        cleaned_lines = clean_ai_text(text, max_sentences=2)
+        if not cleaned_lines:
+            continue
+
+        st.session_state.messages.append({
+            "type": "chat",
+            "speaker": name,
+            "icon": info["icon"],
+            "color": info["color"],
+            "lines": cleaned_lines,
+            "time": now_time
+        })
     
-    if st.session_state.waiting_for_tikitaka_choice:
-        st.write("---")
-        col_b1, col_b2 = st.columns(2)
-        with col_b1:
-            if st.button("🚀 이어서 티키타카 더 듣기", use_container_width=True):
-                st.session_state.waiting_for_tikitaka_choice = False
-                st.rerun()
-        with col_b2:
-            if st.button("📊 바로 사회자 요약으로 넘어가기", use_container_width=True):
-                st.session_state.waiting_for_tikitaka_choice = False
-                st.session_state.step_count = MAX_STEPS - 1
-                st.rerun()
+    st.session_state.step_count += 1
+    st.rerun()
 
-    elif st.session_state.step_count < MAX_STEPS:
+def process_debate_step(client, model_name, flat_history, now_time, max_steps):
+    """난상토론 단계: 철학자들 간 상호 호명 및 반박 티키타카"""
+    recent_messages = [m for m in st.session_state.messages if m['type'] == 'chat']
+    attacked_counts = {name: 0 for name in PHILOSOPHERS.keys()}
+    
+    for m in recent_messages[-4:]:
+        msg_text = " ".join(m['lines'])
+        for name in PHILOSOPHERS.keys():
+            if name in msg_text and m['speaker'] != name:
+                attacked_counts[name] += 1
+
+    sorted_targets = sorted(attacked_counts.items(), key=lambda x: x[1], reverse=True)
+    target_speaker = sorted_targets[0][0] if sorted_targets[0][1] > 0 else random.choice(list(PHILOSOPHERS.keys()))
+    
+    attackers = []
+    for m in recent_messages[-3:]:
+        msg_text = " ".join(m['lines'])
+        if target_speaker in msg_text and m['speaker'] != target_speaker:
+            if m['speaker'] not in attackers:
+                attackers.append(m['speaker'])
+    
+    if not attackers:
+        other_philos = [n for n in PHILOSOPHERS.keys() if n != target_speaker]
+        attackers = [random.choice(other_philos)]
+
+    speakers_to_act = [target_speaker]
+    other_philos = [n for n in PHILOSOPHERS.keys() if n != target_speaker]
+    random.shuffle(other_philos)
+    speakers_to_act.extend(other_philos[:random.randint(1, 2)])
+    random.shuffle(speakers_to_act)
+
+    temp_history = list(flat_history)
+    for name in speakers_to_act:
+        info = PHILOSOPHERS[name]
         
-        current_step = st.session_state.step_count
-        kst = timezone(timedelta(hours=9))
-        now_time = datetime.now(kst).strftime("%p %I:%M").replace("AM", "오전").replace("PM", "오후")
-        
-        if current_step == 0:
-            spinner_msg = "🏛️ 철학자들이 입장해 첫 생각을 진중하게 발표하는 중..."
-        elif current_step == MAX_STEPS - 1:
-            spinner_msg = "📊 사회자가 대화 내용을 바탕으로 찬반 입장을 정리하는 중..."
-        else:
-            spinner_msg = f"🔥 톡으로 서로를 의식하며 티키타카 수다를 떠는 중... ({current_step}/{MAX_STEPS-2})"
+        previous_statements = [m['lines'] for m in st.session_state.messages if m['type'] == 'chat' and m['speaker'] == name]
+        last_statement_str = " ".join(previous_statements[-1]) if previous_statements else "없음"
 
-        with st.spinner(spinner_msg):
-            time.sleep(0.8)
-            
-            flat_history = []
-            for m in st.session_state.messages:
-                if m['type'] == 'chat':
-                    flat_history.append(f"{m['speaker']}: {' '.join(m['lines'])}")
-
-            # 텍스트 정제 헬퍼 함수
-            def clean_ai_text(text, max_sentences=2):
-                text = re.sub(r'\[시스템 알림:[^\]]*\]', '', text)
-                raw_lines = text.split('\n')
-                sentences = []
-                for rl in raw_lines:
-                    rl = rl.strip()
-                    if not rl or rl == ']':
-                        continue
-                    split_sents = [s.strip() for s in re.split(r'(?<=[.?!])\s+', rl) if s.strip()]
-                    if split_sents:
-                        sentences.extend(split_sents)
-                    else:
-                        sentences.append(rl)
-                return sentences[:max_sentences]
-
-            # 1단계: 초반 입론 (다른 사람 이름 호명 금지, 오직 자기 본인의 주장만 말함)
-            if current_step == 0:
-                for name, info in PHILOSOPHERS.items():
-                    intro_content = (
-                        f"{info['prompt']}\n\n"
-                        f"[토론 주제] {st.session_state.current_topic}\n\n"
-                        f"지침: 이 토론 주제에 대해 다른 어떤 사상가의 이름이나 호칭(그대, 친구 등)도 언급하지 마라! 오직 너 자신({name})의 철학적 관점에만 입각해 고등학생이 이해하기 쉬운 어휘로 **딱 1~2문장**만 밝혀라. 토론 주제에 대한 **본인의 최종 주장 및 결론 부분은 반드시 굵은 글씨(`**결론**`)로 강조**해서 작성해라."
-                    )
-                    try:
-                        res = client.chat.completions.create(
-                            model="gemini-3.5-flash-lite",
-                            messages=[{"role": "user", "content": intro_content}],
-                        )
-                        text = res.choices[0].message.content.strip()
-                        if not text:
-                            continue
-                    except Exception:
-                        continue
-                    
-                    cleaned_lines = clean_ai_text(text, max_sentences=2)
-                    if not cleaned_lines:
-                        continue
-
-                    st.session_state.messages.append({
-                        "type": "chat",
-                        "speaker": name,
-                        "icon": info["icon"],
-                        "color": info["color"],
-                        "lines": cleaned_lines,
-                        "time": now_time
-                    })
-                
-                st.session_state.step_count += 1
-                st.rerun()
-
-            # 난상토론 단계 (철학자들 서로의 이름을 호명하며 반박)
-            elif current_step < MAX_STEPS - 1:
-                recent_messages = [m for m in st.session_state.messages if m['type'] == 'chat']
-                attacked_counts = {name: 0 for name in PHILOSOPHERS.keys()}
-                
-                for m in recent_messages[-4:]:
-                    msg_text = " ".join(m['lines'])
-                    for name in PHILOSOPHERS.keys():
-                        if name in msg_text and m['speaker'] != name:
-                            attacked_counts[name] += 1
-
-                sorted_targets = sorted(attacked_counts.items(), key=lambda x: x[1], reverse=True)
-                target_speaker = sorted_targets[0][0] if sorted_targets[0][1] > 0 else random.choice(list(PHILOSOPHERS.keys()))
-                
-                attackers = []
-                for m in recent_messages[-3:]:
-                    msg_text = " ".join(m['lines'])
-                    if target_speaker in msg_text and m['speaker'] != target_speaker:
-                        if m['speaker'] not in attackers:
-                            attackers.append(m['speaker'])
-                
-                if not attackers:
-                    other_philos = [n for n in PHILOSOPHERS.keys() if n != target_speaker]
-                    attackers = [random.choice(other_philos)]
-
-                speakers_to_act = [target_speaker]
-                other_philos = [n for n in PHILOSOPHERS.keys() if n != target_speaker]
-                random.shuffle(other_philos)
-                speakers_to_act.extend(other_philos[:random.randint(1, 2)])
-                random.shuffle(speakers_to_act)
-
-                temp_history = list(flat_history)
-                for name in speakers_to_act:
-                    info = PHILOSOPHERS[name]
-                    
-                    previous_statements = [m['lines'] for m in st.session_state.messages if m['type'] == 'chat' and m['speaker'] == name]
-                    last_statement_str = " ".join(previous_statements[-1]) if previous_statements else "없음"
-
-                    if name == target_speaker and len(attackers) > 1:
-                        for atk in attackers[:2]:
-                            individual_debate_content = (
-                                f"{info['prompt']}\n\n"
-                                f"[토론 주제] {st.session_state.current_topic}\n\n"
-                                f"[지금까지의 대화 흐름]\n" + ("\n".join(temp_history)) +
-                                f"\n\n[주의사항 - 개별 반박]: {atk}의 최근 주장에 대해, {name}로서 반드시 **상대방 철학자({atk})의 이름을 부르며** 짧게 1~2문장으로 반박해라."
-                            )
-                            try:
-                                res = client.chat.completions.create(
-                                    model="gemini-3.5-flash-lite",
-                                    messages=[{"role": "user", "content": individual_debate_content}],
-                                )
-                                text = res.choices[0].message.content.strip()
-                                if not text:
-                                    continue
-                            except Exception:
-                                continue
-
-                            cleaned_lines = clean_ai_text(text, max_sentences=2)
-                            if not cleaned_lines:
-                                continue
-
-                            st.session_state.messages.append({
-                                "type": "chat",
-                                "speaker": name,
-                                "icon": info["icon"],
-                                "color": info["color"],
-                                "lines": cleaned_lines,
-                                "time": now_time
-                            })
-                            temp_history.append(f"{name}: {' '.join(cleaned_lines)}")
-                    else:
-                        target_to_mention = random.choice([n for n in PHILOSOPHERS.keys() if n != name])
-                        debate_content = (
-                            f"{info['prompt']}\n\n"
-                            f"[토론 주제] {st.session_state.current_topic}\n\n"
-                            f"[지금까지의 대화 흐름]\n" + ("\n".join(temp_history)) +
-                            f"\n\n[주의사항 - 상대방 호명 반박]: 네가 직전에 한 말: \"{last_statement_str}\"\n"
-                            f"지침: 고등학생이 이해하기 쉬운 어휘로, 뻔한 말을 반복하지 말고 반박해라. 말할 때 **반드시 다른 철학자 중 1명의 이름(예: {target_to_mention})을 직접 호명하며** 1~2문장으로 아주 짧고 간결하게 대답해라."
-                        )
-
-                        try:
-                            res = client.chat.completions.create(
-                                model="gemini-3.5-flash-lite",
-                                messages=[{"role": "user", "content": debate_content}],
-                            )
-                            text = res.choices[0].message.content.strip()
-                            if not text:
-                                continue
-                        except Exception:
-                            continue
-                        
-                        cleaned_lines = clean_ai_text(text, max_sentences=2)
-                        if not cleaned_lines:
-                            continue
-
-                        st.session_state.messages.append({
-                            "type": "chat",
-                            "speaker": name,
-                            "icon": info["icon"],
-                            "color": info["color"],
-                            "lines": cleaned_lines,
-                            "time": now_time
-                        })
-                        temp_history.append(f"{name}: {' '.join(cleaned_lines)}")
-
-                st.session_state.step_count += 1
-                
-                if st.session_state.step_count >= 7:
-                    st.session_state.waiting_for_tikitaka_choice = True
-
-                st.rerun()
-
-            # 사회자 최종 요약 카드 생성 (찬성/반대/중립 입장 명시 및 철학자별 고유 말투 반영)
-            else:
-                summary_prompt = (
-                    f"토론 주제: {st.session_state.current_topic}\n"
-                    f"지침: 사회자로서 이번 찬반 토론 주제('{st.session_state.current_topic}')에 대해 니체, 소크라테스, 장자, 칸트, 홉스가 각각 **[찬성]**, **[반대]**, 혹은 **[중립]** 중 어떤 입장을 가지는지 명확히 제시해 주세요.\n"
-                    "만약 중립적인 의견일 경우 반드시 '이 주제에 대해 중립적이다'라고 표현하고 그 이유를 설명해 주세요.\n"
-                    "각 철학자별 한 줄 요약은 반드시 해당 철학자의 페르소나와 말투(니체는 초인과 권력의 의지를 담은 단호한 결론, 소크라테스는 무지와 질문을 던지는 탐구적 말투, 장자는 무위자연과 허무를 꿰뚫는 해학적 말투, 칸트는 정언명령과 보편적 도덕 의무를 강조하는 엄격한 말투, 홉스는 만인의 투쟁과 리바이어던의 필요성을 단호하게 짓누르는 현실주의적 말투)를 완벽하게 살려서 작성해 주세요.\n"
-                    "출력 시 철학자 이름 앞뒤에 마크다운 기호(**)를 절대 붙이지 말고, 순수 텍스트와 HTML 태그만 사용해 주세요.\n"
-                    "반드시 아래 형식으로만 작성해 주세요:\n"
-                    f"### 📊 [사회자] '{st.session_state.current_topic}'에 대한 철학자별 찬반 입장 및 주장\n"
-                    f"- ⚡ 니체: [찬성/반대/중립] (니체 페르소나와 말투로 내린 결론 1문장)\n"
-                    f"- 🦉 소크라테스: [찬성/반대/중립] (소크라테스 페르소나와 말투로 내린 결론 1문장)\n"
-                    f"- 🦋 장자: [찬성/반대/중립] (장자 페르소나와 말투로 내린 결론 1문장)\n"
-                    f"- 🕰️ 칸트: [찬성/반대/중립] (칸트 페르소나와 말투로 내린 결론 1문장)\n"
-                    f"- 🦁 홉스: [찬성/반대/중립] (홉스 페르소나와 말투로 내린 결론 1문장)"
+        if name == target_speaker and len(attackers) > 1:
+            for atk in attackers[:2]:
+                individual_debate_content = (
+                    f"{info['prompt']}\n\n"
+                    f"[토론 주제] {st.session_state.current_topic}\n\n"
+                    f"[지금까지의 대화 흐름]\n" + ("\n".join(temp_history)) +
+                    f"\n\n[주의사항 - 개별 반박]: {atk}의 최근 주장에 대해, {name}로서 반드시 **상대방 철학자({atk})의 이름을 부르며** 짧게 1~2문장으로 반박해라."
                 )
-                try:
-                    res = client.chat.completions.create(
-                        model="gemini-3.5-flash-lite",
-                        messages=[{"role": "user", "content": summary_prompt}],
-                    )
-                    summary_text = res.choices[0].message.content.strip()
-                except Exception:
-                    summary_text = (
-                        f"### 📊 [사회자] '{st.session_state.current_topic}'에 대한 철학자별 찬반 입장 및 주장\n"
-                        f"- ⚡ 니체: [반대] 기존의 모든 도덕적 틀을 깨부수고 우리 스스로 새로운 가치를 창조해야만 한다!\n"
-                        f"- 🦉 소크라테스: [중립] 이 주제에 대해 중립적이며, 그대가 아는 것이 진실인지 스스로에게 끊임없이 질문해야 하지 않겠는가?\n"
-                        f"- 🦋 장자: [중립] 이 주제에 대해 중립적이며, 억지로 무엇을 하려 하지 말고 자연의 흐름에 온전히 몸을 맡길지니라.\n"
-                        f"- 🕰️ 칸트: [찬성] 감정과 이익을 넘어 어떤 상황에서도 보편적 도덕 법칙과 의무를 엄격하게 지켜야만 합니다.\n"
-                        f"- 🦁 홉스: [찬성] 이기적인 인간의 투쟁을 막기 위해서는 강력한 법과 절대적인 질서가 오직 답이다."
-                    )
+                text = fetch_ai_response(client, model_name, individual_debate_content)
+                if not text:
+                    continue
 
-                summary_text = colorize_philosopher_names(summary_text)
+                cleaned_lines = clean_ai_text(text, max_sentences=2)
+                if not cleaned_lines:
+                    continue
 
                 st.session_state.messages.append({
-                    "type": "summary",
-                    "content": summary_text
+                    "type": "chat",
+                    "speaker": name,
+                    "icon": info["icon"],
+                    "color": info["color"],
+                    "lines": cleaned_lines,
+                    "time": now_time
                 })
+                temp_history.append(f"{name}: {' '.join(cleaned_lines)}")
+        else:
+            target_to_mention = random.choice([n for n in PHILOSOPHERS.keys() if n != name])
+            debate_content = (
+                f"{info['prompt']}\n\n"
+                f"[토론 주제] {st.session_state.current_topic}\n\n"
+                f"[지금까지의 대화 흐름]\n" + ("\n".join(temp_history)) +
+                f"\n\n[주의사항 - 상대방 호명 반박]: 네가 직전에 한 말: \"{last_statement_str}\"\n"
+                f"지침: 고등학생이 이해하기 쉬운 어휘로, 뻔한 말을 반복하지 말고 반박해라. 말할 때 **반드시 다른 철학자 중 1명의 이름(예: {target_to_mention})을 직접 호명하며** 1~2문장으로 아주 짧고 간결하게 대답해라."
+            )
 
-            st.session_state.step_count += 1
-            st.rerun()
+            text = fetch_ai_response(client, model_name, debate_content)
+            if not text:
+                continue
+            
+            cleaned_lines = clean_ai_text(text, max_sentences=2)
+            if not cleaned_lines:
+                continue
 
-    else:
-        st.success("🎉 아고라 광장의 열띤 토론이 모두 종료되었습니다!")
-        if st.button("🔄 새로운 주제로 대화하기"):
+            st.session_state.messages.append({
+                "type": "chat",
+                "speaker": name,
+                "icon": info["icon"],
+                "color": info["color"],
+                "lines": cleaned_lines,
+                "time": now_time
+            })
+            temp_history.append(f"{name}: {' '.join(cleaned_lines)}")
+
+    st.session_state.step_count += 1
+    
+    if st.session_state.step_count >= 7:
+        st.session_state.waiting_for_tikitaka_choice = True
+
+    st.rerun()
+
+def process_summary_step(client, model_name):
+    """사회자 최종 요약 카드 생성 단계"""
+    summary_prompt = (
+        f"토론 주제: {st.session_state.current_topic}\n"
+        f"지침: 사회자로서 이번 찬반 토론 주제('{st.session_state.current_topic}')에 대해 니체, 소크라테스, 장자, 칸트, 홉스가 각각 **[찬성]**, **[반대]**, 혹은 **[중립]** 중 어떤 입장을 가지는지 명확히 제시해 주세요.\n"
+        "만약 중립적인 의견일 경우 반드시 '이 주제에 대해 중립적이다'라고 표현하고 그 이유를 설명해 주세요.\n"
+        "각 철학자별 한 줄 요약은 반드시 해당 철학자의 페르소나와 말투(니체는 초인과 권력의 의지를 담은 단호한 결론, 소크라테스는 무지와 질문을 던지는 탐구적 말투, 장자는 무위자연과 허무를 꿰뚫는 해학적 말투, 칸트는 정언명령과 보편적 도덕 의무를 강조하는 엄격한 말투, 홉스는 만인의 투쟁과 리바이어던의 필요성을 단호하게 짓누르는 현실주의적 말투)를 완벽하게 살려서 작성해 주세요.\n"
+        "출력 시 철학자 이름 앞뒤에 마크다운 기호(**)를 절대 붙이지 말고, 순수 텍스트와 HTML 태그만 사용해 주세요.\n"
+        "반드시 아래 형식으로만 작성해 주세요:\n"
+        f"### 📊 [사회자] '{st.session_state.current_topic}'에 대한 철학자별 찬반 입장 및 주장\n"
+        f"- ⚡ 니체: [찬성/반대/중립] (니체 페르소나와 말투로 내린 결론 1문장)\n"
+        f"- 🦉 소크라테스: [찬성/반대/중립] (소크라테스 페르소나와 말투로 내린 결론 1문장)\n"
+        f"- 🦋 장자: [찬성/반대/중립] (장자 페르소나와 말투로 내린 결론 1문장)\n"
+        f"- 🕰️ 칸트: [찬성/반대/중립] (칸트 페르소나와 말투로 내린 결론 1문장)\n"
+        f"- 🦁 홉스: [찬성/반대/중립] (홉스 페르소나와 말투로 내린 결론 1문장)"
+    )
+    
+    summary_text = fetch_ai_response(client, model_name, summary_prompt)
+    if not summary_text:
+        summary_text = (
+            f"### 📊 [사회자] '{st.session_state.current_topic}'에 대한 철학자별 찬반 입장 및 주장\n"
+            f"- ⚡ 니체: [반대] 기존의 모든 도덕적 틀을 깨부수고 우리 스스로 새로운 가치를 창조해야만 한다!\n"
+            f"- 🦉 소크라테스: [중립] 이 주제에 대해 중립적이며, 그대가 아는 것이 진실인지 스스로에게 끊임없이 질문해야 하지 않겠는가?\n"
+            f"- 🦋 장자: [중립] 이 주제에 대해 중립적이며, 억지로 무엇을 하려 하지 말고 자연의 흐름에 온전히 몸을 맡길지니라.\n"
+            f"- 🕰️ 칸트: [찬성] 감정과 이익을 넘어 어떤 상황에서도 보편적 도덕 법칙과 의무를 엄격하게 지켜야만 합니다.\n"
+            f"- 🦁 홉스: [찬성] 이기적인 인간의 투쟁을 막기 위해서는 강력한 법과 절대적인 질서가 오직 답이다."
+        )
+
+    summary_text = colorize_philosopher_names(summary_text)
+
+    st.session_state.messages.append({
+        "type": "summary",
+        "content": summary_text
+    })
+
+    st.session_state.step_count += 1
+    st.rerun()
+
+# ==========================================
+# 7. 메인 실행 함수
+# ==========================================
+def main():
+    configure_page()
+    initialize_session_state()
+
+    st.title("🏛️ AI 철학자 그룹채팅")
+
+    # API 키 검증 및 클라이언트 생성
+    try:
+        gemini_api_key = st.secrets["GEMINI_API_KEY"]
+    except Exception:
+        st.error("secrets.toml 파일에서 GEMINI_API_KEY를 찾을 수 없습니다.")
+        st.stop()
+
+    client = OpenAI(
+        api_key=gemini_api_key,
+        base_url="https://generativelanguage.googleapis.com/v1beta/openai/",
+    )
+    MODEL_NAME = "gemini-3.5-flash-lite"
+
+    # 주제 입력 섹션
+    render_sidebar_or_header_info()
+    topic = st.text_input("아고라 채팅방에 던질 토론 주제를 입력하세요:", placeholder="예: 동물원은 존재해야 하는가?")
+
+    if st.button("💬 채팅방 입장 및 토론 시작"):
+        if topic.strip():
             st.session_state.messages = []
-            st.session_state.discussion_active = False
+            st.session_state.current_topic = topic
+            st.session_state.discussion_active = True
             st.session_state.step_count = 0
             st.session_state.waiting_for_tikitaka_choice = False
             st.rerun()
+        else:
+            st.warning("토론 주제를 입력해 주세요.")
+
+    # 대화방 활성화 시 화면 렌더링 및 단계별 진행 제어
+    if st.session_state.discussion_active:
+        render_chat_history()
+
+        MAX_STEPS = 9  
+        
+        if st.session_state.waiting_for_tikitaka_choice:
+            st.write("---")
+            col_b1, col_b2 = st.columns(2)
+            with col_b1:
+                if st.button("🚀 이어서 티키타카 더 듣기", use_container_width=True):
+                    st.session_state.waiting_for_tikitaka_choice = False
+                    st.rerun()
+            with col_b2:
+                if st.button("📊 바로 사회자 요약으로 넘어가기", use_container_width=True):
+                    st.session_state.waiting_for_tikitaka_choice = False
+                    st.session_state.step_count = MAX_STEPS - 1
+                    st.rerun()
+
+        elif st.session_state.step_count < MAX_STEPS:
+            current_step = st.session_state.step_count
+            now_time = get_current_kst_time()
+            
+            if current_step == 0:
+                spinner_msg = "🏛️ 철학자들이 입장해 첫 생각을 진중하게 발표하는 중..."
+            elif current_step == MAX_STEPS - 1:
+                spinner_msg = "📊 사회자가 대화 내용을 바탕으로 찬반 입장을 정리하는 중..."
+            else:
+                spinner_msg = f"🔥 톡으로 서로를 의식하며 티키타카 수다를 떠는 중... ({current_step}/{MAX_STEPS-2})"
+
+            with st.spinner(spinner_msg):
+                time.sleep(0.8)
+                
+                flat_history = []
+                for m in st.session_state.messages:
+                    if m['type'] == 'chat':
+                        flat_history.append(f"{m['speaker']}: {' '.join(m['lines'])}")
+
+                # 단계별 분기 처리
+                if current_step == 0:
+                    process_intro_step(client, MODEL_NAME, now_time)
+                elif current_step < MAX_STEPS - 1:
+                    process_debate_step(client, MODEL_NAME, flat_history, now_time, MAX_STEPS)
+                else:
+                    process_summary_step(client, MODEL_NAME)
+
+        else:
+            st.success("🎉 아고라 광장의 열띤 토론이 모두 종료되었습니다!")
+            if st.button("🔄 새로운 주제로 대화하기"):
+                st.session_state.messages = []
+                st.session_state.discussion_active = False
+                st.session_state.step_count = 0
+                st.session_state.waiting_for_tikitaka_choice = False
+                st.rerun()
+
+if __name__ == "__main__":
+    main()
